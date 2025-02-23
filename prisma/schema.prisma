@@ -21,12 +21,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
 
-  otp      String?
+  otp      OTP[]
   isVerify Boolean @default(false)
 
-  student     Student?     @relation(fields: [id], references: [id], onDelete: Cascade, map: "User_student_fkey")
-  lecturer    Lecturer?    @relation(fields: [id], references: [id], onDelete: Cascade, map: "User_lecturer_fkey")
-  coordinator Coordinator? @relation(fields: [id], references: [id], onDelete: Cascade, map: "User_coordinator_fkey")
+  studentID     Int? @unique
+  lecturerID    Int? @unique
+  coordinatorID Int? @unique
+
+  student     Student?     @relation(fields: [studentID], references: [id], onDelete: Cascade)
+  lecturer    Lecturer?    @relation(fields: [lecturerID], references: [id], onDelete: Cascade)
+  coordinator Coordinator? @relation(fields: [coordinatorID], references: [id], onDelete: Cascade)
+}
+
+model OTP {
+  id        String   @id @default(cuid())
+  code      Int
+  expiresAt DateTime
+  userID    Int
+  user      User     @relation(fields: [userID], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 enum UserRole {
@@ -41,7 +54,7 @@ model Student {
   name   String
   noHP   String   @map("no_hp")
   thesis Thesis[]
-  User   User[]
+  User   User?
 }
 
 model Lecturer {
@@ -50,14 +63,14 @@ model Lecturer {
   name      String
   noHP      String      @map("no_hp")
   assesment Assesment[]
-  User      User[]
+  User      User?
 }
 
 model Coordinator {
   id   Int    @id @default(autoincrement())
   nip  String
   name String
-  User User[]
+  User User?
 }
 
 model Thesis {
