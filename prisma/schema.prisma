@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  otp      String?
+  isVerify Boolean @default(false)
+
+  student     Student?     @relation(fields: [id], references: [id], onDelete: Cascade, map: "User_student_fkey")
+  lecturer    Lecturer?    @relation(fields: [id], references: [id], onDelete: Cascade, map: "User_lecturer_fkey")
+  coordinator Coordinator? @relation(fields: [id], references: [id], onDelete: Cascade, map: "User_coordinator_fkey")
+}
+
+enum UserRole {
+  Student
+  Lecturer
+  Coordinator
+}
+
+model Student {
+  id     Int      @id @default(autoincrement())
+  nim    String   @unique
+  name   String
+  noHP   String   @map("no_hp")
+  thesis Thesis[]
+  User   User[]
+}
+
+model Lecturer {
+  id        Int         @id @default(autoincrement())
+  nip       String      @unique
+  name      String
+  noHP      String      @map("no_hp")
+  assesment Assesment[]
+  User      User[]
+}
+
+model Coordinator {
+  id   Int    @id @default(autoincrement())
+  nip  String
+  name String
+  User User[]
+}
+
+model Thesis {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String
+  status      ThesisStatus
+
+  studentID Int
+
+  student   Student     @relation(fields: [studentID], references: [id])
+  assesment Assesment[]
+}
+
+enum ThesisStatus {
+  DRAFT
+  SUBMITTED
+  COMPLETED
+  REVIEWED
+}
+
+model Assesment {
+  id           Int          @id @default(autoincrement())
+  lecturerRole LecturerRole @map("lecturer_role")
+
+  writingScore      Float? @map("writing_score")
+  presentationScore Float? @map("presentation_score")
+  titleScore        Float? @map("title_score")
+  guidanceScore     Float? @map("guidance_score")
+
+  finalScore Float?  @map("final_score")
+  feedback   String?
+
+  Lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
+  lecturerId Int?
+  Thesis     Thesis?   @relation(fields: [thesisId], references: [id])
+  thesisId   Int?
+}
+
+enum LecturerRole {
+  ADVISOR
+  ASSESSOR
+}
