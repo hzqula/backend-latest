@@ -25,7 +25,10 @@ export const getStudentByNIM = async (req: Request, res: Response) => {
   try {
     const { nim } = req.params;
 
-    const student = await prisma.student.findUnique({ where: { nim: nim } });
+    const student = await prisma.student.findUnique({
+      where: { nim: nim },
+      include: { user: { select: { email: true, role: true } } },
+    });
 
     if (!student) {
       return res
@@ -40,13 +43,11 @@ export const getStudentByNIM = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Gagal mendapatkan data mahasiswa: ", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Terjadi kesalahan saat mendapatkan data mahasiswa",
-        error:
-          error instanceof Error ? error.message : "Kesalahan tidak diketahui",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat mendapatkan data mahasiswa",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+    });
   }
 };

@@ -43,34 +43,34 @@ model OTP {
 }
 
 enum UserRole {
-  Student
-  Lecturer
-  Coordinator
+  STUDENT
+  LECTURER
+  COORDINATOR
 }
 
 model Student {
-  id     Int      @id @default(autoincrement())
-  nim    String   @unique
-  name   String
-  noHP   String   @map("no_hp")
-  thesis Thesis[]
-  User   User?
+  id          Int      @id @default(autoincrement())
+  nim         String   @unique
+  name        String
+  phoneNumber String   @map("phone_number")
+  thesis      Thesis[]
+  user        User?
 }
 
 model Lecturer {
-  id        Int         @id @default(autoincrement())
-  nip       String      @unique
-  name      String
-  noHP      String      @map("no_hp")
-  assesment Assesment[]
-  User      User?
+  id          Int         @id @default(autoincrement())
+  nip         String      @unique
+  name        String
+  phoneNumber String      @map("phone_number")
+  assesment   Assesment[]
+  user        User?
 }
 
 model Coordinator {
   id   Int    @id @default(autoincrement())
   nip  String
   name String
-  User User?
+  user User?
 }
 
 model Thesis {
@@ -106,7 +106,7 @@ model Assesment {
 
   Lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
   lecturerId Int?
-  Thesis     Thesis?   @relation(fields: [thesisId], references: [id])
+  thesis     Thesis?   @relation(fields: [thesisId], references: [id])
   thesisId   Int?
 }
 
