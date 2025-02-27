@@ -266,3 +266,72 @@ export const completeSignUp = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const signIn = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email dan password harus diisi" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        student: true,
+        lecturer: true,
+        coordinator: true,
+      },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Email atau password yang dimasukkan salah" });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res
+        .status(400)
+        .json({ message: "Password yang dimasukkan salah" });
+    }
+
+    let profile;
+    if (user.role === UserRole.STUDENT && user.student) {
+      profile = user.student;
+    } else if (user.role === UserRole.LECTURER && user.lecturer) {
+      profile = user.lecturer;
+    } else if (user.role === UserRole.COORDINATOR && user.coordinator) {
+      profile = user.coordinator;
+    }
+    const token = jwt.sign(
+      {
+        userID: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      secretKey,
+      { expiresIn: "1h" }
+    );
+
+    return res.status(200).json({
+      message: "Sign-in berhasil",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        profile,
+      },
+    });
+  } catch (error) {
+    console.error("Sign-in gagal: ", error);
+    return res.status(500).json({
+      message: "Kesalahan terjadi ketika Sign-in",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+    });
+  }
+};
