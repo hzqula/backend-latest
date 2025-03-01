@@ -49,28 +49,31 @@ enum UserRole {
 }
 
 model Student {
-  id          Int      @id @default(autoincrement())
-  nim         String   @unique
-  name        String
-  phoneNumber String   @map("phone_number")
-  thesis      Thesis[]
-  user        User?
+  id             Int      @id @default(autoincrement())
+  nim            String   @unique
+  name           String
+  phoneNumber    String   @map("phone_number")
+  profilePicture String?  @map("profile_picture")
+  thesis         Thesis[]
+  user           User?
 }
 
 model Lecturer {
-  id          Int         @id @default(autoincrement())
-  nip         String      @unique
-  name        String
-  phoneNumber String      @map("phone_number")
-  assesment   Assesment[]
-  user        User?
+  id             Int         @id @default(autoincrement())
+  nip            String      @unique
+  name           String
+  phoneNumber    String      @map("phone_number")
+  profilePicture String?     @map("profile_picture")
+  assesment      Assesment[]
+  user           User?
 }
 
 model Coordinator {
-  id   Int    @id @default(autoincrement())
-  nip  String
-  name String
-  user User?
+  id             Int     @id @default(autoincrement())
+  nip            String
+  name           String
+  profilePicture String? @map("profile_picture")
+  user           User?
 }
 
 model Thesis {
