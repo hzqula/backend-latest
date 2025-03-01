@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
-import { prisma } from "../lib/prisma";
+import { StudentService } from "../services/student.service";
+
+const studentService = new StudentService();
 
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
-    const students = await prisma.student.findMany({});
-
+    const students = await studentService.getAllStudents();
     return res.status(200).json({
       success: true,
       data: students,
@@ -24,18 +25,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
 export const getStudentByNIM = async (req: Request, res: Response) => {
   try {
     const { nim } = req.params;
-
-    const student = await prisma.student.findUnique({
-      where: { nim: nim },
-      include: { user: { select: { email: true, role: true } } },
-    });
-
-    if (!student) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Mahasiswa tidak ditemukan" });
-    }
-
+    const student = await studentService.getStudentByNIM(nim);
     return res.status(200).json({
       success: true,
       data: student,
@@ -43,11 +33,17 @@ export const getStudentByNIM = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Gagal mendapatkan data mahasiswa: ", error);
-    return res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan saat mendapatkan data mahasiswa",
-      error:
-        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
-    });
+    return res
+      .status(
+        error instanceof Error && error.message === "Mahasiswa tidak ditemukan"
+          ? 404
+          : 500
+      )
+      .json({
+        success: false,
+        message: "Terjadi kesalahan saat mendapatkan data mahasiswa",
+        error:
+          error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+      });
   }
 };
