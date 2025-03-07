@@ -23,4 +23,20 @@ export class LecturerService {
       },
     });
   }
+
+  async getAllLecturers(): Promise<Lecturer[]> {
+    const lecturers = await prisma.lecturer.findMany();
+    return lecturers;
+  }
+
+  async getLecturerByNIP(nip: string): Promise<Lecturer> {
+    const lecture = await prisma.lecturer.findUnique({
+      where: { nip },
+      include: { user: { select: { email: true, role: true } } },
+    });
+
+    if (!lecture) throw new Error("Mahasiswa tidak ditemukan");
+
+    return lecture;
+  }
 }
