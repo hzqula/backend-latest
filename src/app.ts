@@ -3,6 +3,8 @@ import cors from "cors";
 import { PORT } from "./configs/env";
 import authRoutes from "./routes/auth.routes";
 import studentRoutes from "./routes/student.routes";
+import recaptchaRoutes from "./routes/recaptcha.routes";
+
 
 const app = express();
 app.use(express.json());
@@ -19,6 +21,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api/recaptcha", recaptchaRoutes);
 
 app.listen(PORT, () => {
   console.log(`Latest API running on http://localhost:${PORT}`);
