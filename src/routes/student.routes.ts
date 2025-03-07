@@ -6,7 +6,7 @@ import {
 
 const studentRouter = express.Router();
 
-studentRouter.get("/", getAllStudents as any);
-studentRouter.get("/:nim", getStudentByNIM as any);
+studentRouter.get("/", getAllStudents);
+studentRouter.get("/:nim", getStudentByNIM);
 
 export default studentRouter;

@@ -6,14 +6,14 @@ const studentService = new StudentService();
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
     const students = await studentService.getAllStudents();
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       data: students,
       message: "Berhasil mendapatkan data mahasiswa",
     });
   } catch (error) {
     console.error("Gagal mendapatkan data mahasiswa: ", error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "Terjadi kesalahan saat mendapatkan data mahasiswa",
       error:
@@ -26,14 +26,14 @@ export const getStudentByNIM = async (req: Request, res: Response) => {
   try {
     const { nim } = req.params;
     const student = await studentService.getStudentByNIM(nim);
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       data: student,
       message: "Berhasil mendapatkan data mahasiswa",
     });
   } catch (error) {
     console.error("Gagal mendapatkan data mahasiswa: ", error);
-    return res
+    res
       .status(
         error instanceof Error && error.message === "Mahasiswa tidak ditemukan"
           ? 404
