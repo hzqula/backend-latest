@@ -7,15 +7,15 @@ import {
   upload,
 } from "../controllers/auth.controller";
 
-const router = express.Router();
+const authRouter = express.Router();
 
-router.post("/send-otp", sendOTP);
-router.post("/verify-otp", verifyOTP);
-router.post(
+authRouter.post("/send-otp", sendOTP);
+authRouter.post("/verify-otp", verifyOTP);
+authRouter.post(
   "/complete-register",
   upload.single("profilePicture"),
   completeRegister
 );
-router.post("/login", login);
+authRouter.post("/login", login);
 
-export default router;
+export default authRouter;
