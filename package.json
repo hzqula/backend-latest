@@ -28,7 +28,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+<<<<<<< HEAD
     "helmet": "^8.0.0",
+=======
+    "googleapis": "^146.0.0",
+>>>>>>> e594ea7a62e178b10a25de942363323e9706ffe0
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",

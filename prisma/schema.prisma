@@ -43,75 +43,122 @@ model OTP {
   createdAt DateTime @default(now())
 }
 
+model Student {
+  id             Int       @id @default(autoincrement())
+  nim            String    @unique
+  name           String
+  phoneNumber    String    @map("phone_number")
+  profilePicture String?   @map("profile_picture")
+  user           User?
+  seminars       Seminar[]
+}
+
+model Lecturer {
+  id             Int     @id @default(autoincrement())
+  nip            String  @unique
+  name           String
+  phoneNumber    String  @map("phone_number")
+  profilePicture String? @map("profile_picture")
+  user           User?
+
+  seminarAdvisors  SeminarAdvisor[]
+  seminarAssessors SeminarAssessor[]
+  assessments      Assessment[]
+}
+
+model Coordinator {
+  id             Int     @id @default(autoincrement())
+  name           String
+  profilePicture String? @map("profile_picture")
+  user           User?
+}
+
+model Seminar {
+  id        Int           @id @default(autoincrement())
+  type      SeminarType
+  title     String
+  status    SeminarStatus @default(DRAFT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now())
+
+  studentNIM String
+  student    Student @relation(fields: [studentNIM], references: [nim])
+
+  advisors    SeminarAdvisor[]
+  assessors   SeminarAssessor[]
+  documents   SeminarDocument[]
+  assessments Assessment[]
+
+  time DateTime?
+  room String?
+}
+
+model SeminarAdvisor {
+  id          Int      @id @default(autoincrement())
+  seminarID   Int
+  lecturerNIP String
+  seminar     Seminar  @relation(fields: [seminarID], references: [id], onDelete: Cascade)
+  lecturer    Lecturer @relation(fields: [lecturerNIP], references: [nip], onDelete: Cascade)
+}
+
+model SeminarAssessor {
+  id          Int      @id @default(autoincrement())
+  seminarID   Int
+  lecturerNIP String
+  seminar     Seminar  @relation(fields: [seminarID], references: [id], onDelete: Cascade)
+  lecturer    Lecturer @relation(fields: [lecturerNIP], references: [nip], onDelete: Cascade)
+}
+
+model SeminarDocument {
+  id           Int          @id @default(autoincrement())
+  seminarID    Int
+  documentType DocumentType
+  fileName     String
+  fileURL      String
+  seminar      Seminar      @relation(fields: [seminarID], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  id           Int          @id @default(autoincrement())
+  lecturerRole LecturerRole @map("lecturer_role")
+
+  writingScore      Float?  @map("writing_score")
+  presentationScore Float?  @map("presentation_score")
+  titleScore        Float?  @map("title_score")
+  guidanceScore     Float?  @map("guidance_score")
+  finalScore        Float?  @map("final_score")
+  feedback          String?
+
+  lecturerNIP String
+  seminarID   Int
+  lecturer    Lecturer? @relation(fields: [lecturerNIP], references: [nip])
+  seminar     Seminar   @relation(fields: [seminarID], references: [id], onDelete: Cascade)
+}
+
 enum UserRole {
   STUDENT
   LECTURER
   COORDINATOR
 }
 
-model Student {
-  id             Int      @id @default(autoincrement())
-  nim            String   @unique
-  name           String
-  phoneNumber    String   @map("phone_number")
-  profilePicture String?  @map("profile_picture")
-  thesis         Thesis[]
-  user           User?
+enum SeminarType {
+  PROPOSAL
+  HASIL
 }
 
-model Lecturer {
-  id             Int         @id @default(autoincrement())
-  nip            String      @unique
-  name           String
-  phoneNumber    String      @map("phone_number")
-  profilePicture String?     @map("profile_picture")
-  assesment      Assesment[]
-  user           User?
+enum DocumentType {
+  ADVISOR_AVAILABILITY
+  KRS
+  ADVISOR_ASSISTANCE
+  SEMINAR_ATTENDANCE
+  THESIS_PROPOSAL
 }
 
-model Coordinator {
-  id             Int     @id @default(autoincrement())
-  nip            String
-  name           String
-  profilePicture String? @map("profile_picture")
-  user           User?
-}
-
-model Thesis {
-  id          Int          @id @default(autoincrement())
-  title       String
-  description String
-  status      ThesisStatus
-
-  studentID Int
-
-  student   Student     @relation(fields: [studentID], references: [id])
-  assesment Assesment[]
-}
-
-enum ThesisStatus {
+enum SeminarStatus {
   DRAFT
   SUBMITTED
+  SCHEDULED
   COMPLETED
-  REVIEWED
-}
-
-model Assesment {
-  id           Int          @id @default(autoincrement())
-  lecturerRole LecturerRole @map("lecturer_role")
-
-  writingScore      Float? @map("writing_score")
-  presentationScore Float? @map("presentation_score")
-  titleScore        Float? @map("title_score")
-  guidanceScore     Float? @map("guidance_score")
-
-  finalScore Float?  @map("final_score")
-  feedback   String?
-
-  Lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
-  lecturerId Int?
-  thesis     Thesis?   @relation(fields: [thesisId], references: [id])
-  thesisId   Int?
 }
 
 enum LecturerRole {
