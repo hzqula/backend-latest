@@ -31,6 +31,7 @@ model User {
   student     Student?     @relation(fields: [studentID], references: [id], onDelete: Cascade)
   lecturer    Lecturer?    @relation(fields: [lecturerID], references: [id], onDelete: Cascade)
   coordinator Coordinator? @relation(fields: [coordinatorID], references: [id], onDelete: Cascade)
+  securityLog SecurityLog[]
 }
 
 model OTP {
@@ -117,3 +118,14 @@ enum LecturerRole {
   ADVISOR
   ASSESSOR
 }
+
+model SecurityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  ipAddress String
+  device    String   // Tambahan untuk menyimpan perangkat yang digunakan
+  createdAt DateTime @default(now())
+}
+
