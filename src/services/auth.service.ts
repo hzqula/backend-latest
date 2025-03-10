@@ -211,6 +211,8 @@ export class AuthService {
         userID: user.id,
         email: user.email,
         role: user.role,
+        nim: user.student?.nim,
+        nip: user.lecturer?.nip,
       },
       secretKey,
       { expiresIn: "1h" }
