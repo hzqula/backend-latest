@@ -8,7 +8,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
     const students = await studentService.getAllStudents();
     res.status(200).json({
       success: true,
-      data: students,
+      students,
       message: "Berhasil mendapatkan data mahasiswa",
     });
   } catch (error) {
@@ -28,7 +28,7 @@ export const getStudentByNIM = async (req: Request, res: Response) => {
     const student = await studentService.getStudentByNIM(nim);
     res.status(200).json({
       success: true,
-      data: student,
+      student,
       message: "Berhasil mendapatkan data mahasiswa",
     });
   } catch (error) {
