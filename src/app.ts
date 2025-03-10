@@ -5,8 +5,8 @@ import studentRouter from "./routes/student.route";
 import lecturerRouter from "./routes/lecturer.route";
 import authRouter from "./routes/auth.route";
 import recaptchaRouter from "./routes/recaptcha.route";
+import   resetPassword   from "./routes/reset-password.route";
 import seminarRouter from "./routes/seminar.route";
-
 const app = express();
 
 app.use(express.json());
@@ -28,6 +28,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/students", studentRouter);
 app.use("/api/lecturers", lecturerRouter);
 app.use("/api/recaptcha", recaptchaRouter);
+app.use("/api/reset-password", resetPassword);
 app.use("/api/seminar", seminarRouter);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -39,7 +40,6 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// Jalankan server
 app.listen(PORT, () => {
   console.log(`Latest API running on http://localhost:${PORT}`);
 });

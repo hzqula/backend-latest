@@ -6,6 +6,7 @@ import sendOTPEmail from "../lib/nodemailer";
 import { StudentService } from "./student.service";
 import { LecturerService } from "./lecturer.service";
 import { JWT_SECRET } from "../configs/env";
+import { resetPassword } from "../controllers/reset-password.controller";
 
 const studentService = new StudentService();
 const lecturerService = new LecturerService();
@@ -33,7 +34,7 @@ export class AuthService {
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser && existingUser.isVerify) {
+    if (existingUser && existingUser.isVerify && !resetPassword)  {
       throw new Error("Email tersebut sudah didaftarkan");
     }
 
@@ -61,6 +62,8 @@ export class AuthService {
         userID: tempUser!.id,
       },
     });
+
+    console.log("OTP Code:", otpCode);
 
     const emailSent = await sendOTPEmail(email, otpCode);
     if (!emailSent && !existingUser) {
