@@ -168,11 +168,11 @@ enum LecturerRole {
 
 model SecurityLog {
   id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int?     // Make this optional with the question mark
+  user      User?    @relation(fields: [userId], references: [id])
   action    String
   ipAddress String
-  device    String   // Tambahan untuk menyimpan perangkat yang digunakan
+  device    String
   createdAt DateTime @default(now())
 }
 

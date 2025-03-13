@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { AuthService } from "../services/auth.service";
@@ -7,6 +8,8 @@ import {
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
 } from "../configs/env";
+import { logLoginAttempt, logRegistrationAttempt, logOTPAttempt } from "../middlewares/securityLogMiddleware"; // Import middleware logging
+import { prisma } from "../lib/prisma";
 
 const authService = new AuthService();
 
@@ -32,28 +35,46 @@ export const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 },
 });
 
-export const sendOTP = async (req: Request, res: Response) => {
-  try {
-    const { email, role } = req.body;
+export const sendOTP = async (req: Request, res: Response): Promise<void> => {
+  const { email, role } = req.body;
 
+  try {
+    // Validasi input
     if (!email || !role) {
       res.status(400).json({ message: "Semua input harus terisi" });
       return;
     }
 
+    // Periksa apakah email sudah terdaftar dan diverifikasi
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Periksa apakah existingUser tidak null
+    if (existingUser && existingUser.isVerify) {
+      res.status(400).json({ message: "Email tersebut sudah didaftarkan dan diverifikasi." });
+      return;
+    }
+
+    // Lanjutkan proses pengiriman OTP
     await authService.sendOTP(email, role);
+
+    // Respon sukses
     res.status(200).json({
       message: "OTP telah dikirim ke email Anda",
       success: true,
     });
   } catch (error) {
     console.error("Gagal mengirim OTP: ", error);
+
+    // Respon error
     res.status(500).json({
       message: "Kesalahan terjadi ketika mengirim OTP",
       error: error instanceof Error ? error.message : "Error tidak diketahui",
     });
   }
 };
+
 
 export const verifyOTP = async (req: Request, res: Response) => {
   try {
@@ -65,12 +86,24 @@ export const verifyOTP = async (req: Request, res: Response) => {
     }
 
     await authService.verifyOTP(email, otp);
+
+    // Log OTP attempt (success)
+    req.body.success = true;
+    req.body.reason = "OTP valid";
+    logOTPAttempt(req, res, () => {});
+
     res.status(200).json({
       message: "OTP valid",
       success: "true",
     });
   } catch (error) {
     console.error("Verifikasi OTP gagal: ", error);
+
+    // Log OTP attempt (failed)
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    logOTPAttempt(req, res, () => {});
+
     res.status(500).json({
       message: "Kesalahan terjadi ketika verifikasi OTP",
       error:
@@ -117,6 +150,11 @@ export const completeRegister = async (req: Request, res: Response) => {
       role,
     });
 
+    // Log registration attempt (success)
+    req.body.success = true;
+    req.body.reason = "Registration successful";
+    logRegistrationAttempt(req, res, () => {});
+
     res.status(201).json({
       message: "Pendaftaran berhasil!",
       token,
@@ -124,6 +162,12 @@ export const completeRegister = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Pendaftaran gagal: ", error);
+
+    // Log registration attempt (failed)
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    logRegistrationAttempt(req, res, () => {});
+
     res.status(500).json({
       message: "Kesalahan terjadi ketika melakukan pendaftaran",
       error:
@@ -141,6 +185,12 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const { token, user } = await authService.login(email, password);
+
+    // Log login attempt (success)
+    req.body.success = true;
+    req.body.reason = "Login successful";
+    logLoginAttempt(req, res, () => {});
+
     res.status(200).json({
       message: "Login berhasil",
       token,
@@ -148,6 +198,12 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Login gagal: ", error);
+
+    // Log login attempt (failed)
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    logLoginAttempt(req, res, () => {});
+
     res.status(500).json({
       message: "Kesalahan terjadi ketika Login",
       error:

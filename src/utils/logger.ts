@@ -1,21 +1,30 @@
-import winston from 'winston';
+import { createLogger, format, transports } from "winston";
+import { PrismaClient } from "@prisma/client";
 
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
+const prisma = new PrismaClient();
+
+const logger = createLogger({
+  level: "info",
+  format: format.combine(
+    format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+    format.printf(({ timestamp, level, message }) => `[${timestamp}] ${level}: ${message}`)
   ),
   transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
+    new transports.Console(),
+    new transports.File({ filename: "logs/app.log" }),
   ],
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple(),
-  }));
-}
+// ✅ Fungsi untuk menyimpan Security Log ke database
+export const logSecurityEvent = async (userId: number, action: string, ipAddress: string, device: string) => {
+  try {
+    await prisma.securityLog.create({
+      data: { userId, action, ipAddress, device },
+    });
+    logger.info(`Security log stored: ${action} (userId: ${userId})`);
+  } catch (error) {
+    logger.error("Failed to store security log:", error);
+  }
+};
 
 export default logger;
