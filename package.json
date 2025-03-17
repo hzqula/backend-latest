@@ -4,6 +4,9 @@
     "build": "tsc",
     "dev": "nodemon src/app.ts"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
