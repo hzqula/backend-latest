@@ -34,7 +34,7 @@ export class LecturerService {
       include: { user: { select: { email: true, role: true } } },
     });
 
-    if (!lecture) throw new Error("Mahasiswa tidak ditemukan");
+    if (!lecture) throw new Error("Dosen tidak ditemukan");
 
     return lecture;
   }
