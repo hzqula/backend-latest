@@ -1,8 +1,13 @@
 import express from "express";
 import {
   registerProposalSeminar,
-  uploadSeminarDocument,
+  uploadProposalSeminarDocument,
   finalizeSeminar,
+  getAllSeminars,
+  getSeminarDetail,
+  getSeminarByStudentNIM,
+  updateSeminarProposalDocument,
+  updateRegisterProposalSeminar,
 } from "../controllers/seminar.controller";
 import multer from "multer";
 import { authenticateJWT, restrictTo } from "../middlewares/auth";
@@ -11,23 +16,40 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post(
-  "/register",
+  "/proposal-register",
   authenticateJWT,
   restrictTo("STUDENT"),
   registerProposalSeminar
 );
 router.post(
-  "/document",
+  "/proposal-documents",
   authenticateJWT,
   restrictTo("STUDENT"),
   upload.single("file"),
-  uploadSeminarDocument
+  uploadProposalSeminarDocument
+);
+
+router.put(
+  "/proposal-documents",
+  upload.single("file"),
+  updateSeminarProposalDocument
 );
 router.put(
-  "/finalize",
+  "/proposal-finalize",
   authenticateJWT,
   restrictTo("COORDINATOR"),
   finalizeSeminar
 );
+
+router.put(
+  "/:id",
+  authenticateJWT,
+  restrictTo("STUDENT"),
+  updateRegisterProposalSeminar
+);
+
+router.get("/", getAllSeminars);
+router.get("/:id", getSeminarDetail);
+router.get("/student/:nim", getSeminarByStudentNIM);
 
 export default router;
