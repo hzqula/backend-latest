@@ -79,6 +79,7 @@ model Seminar {
   status    SeminarStatus @default(DRAFT)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @default(now())
+  folderId  String?
 
   studentNIM String
   student    Student @relation(fields: [studentNIM], references: [nim])
