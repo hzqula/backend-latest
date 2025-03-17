@@ -8,15 +8,32 @@ const auth = new google.auth.GoogleAuth({
 
 const drive = google.drive({ version: "v3", auth });
 
+export const createFolder = async (
+  folderName: string,
+  parentFolderId?: string
+): Promise<string> => {
+  const fileMetadata = {
+    name: folderName,
+    mimeType: "application/vnd.google-apps.folder",
+    parents: parentFolderId ? [parentFolderId] : undefined,
+  };
+
+  const res = await drive.files.create({
+    requestBody: fileMetadata,
+    fields: "id",
+  });
+  return res.data.id!;
+};
+
 export const uploadFileToDrive = async (
   file: Buffer,
   fileName: string,
   mimeType: string,
-  folderID?: string
+  folderId?: string
 ): Promise<string> => {
   const fileMetadata = {
     name: fileName,
-    parents: folderID ? [folderID] : undefined,
+    parents: folderId ? [folderId] : undefined,
   };
   const media = {
     mimeType,
@@ -37,6 +54,16 @@ export const uploadFileToDrive = async (
 
     return res.data.webViewLink!;
   } catch (error) {
-    throw new Error(`Failed to upload file to Google Drive: ${error}`);
+    throw new Error(`Gagal mengunggah file Google Drive: ${error}`);
+  }
+};
+
+export const deleteFileFromDrive = async (fileId: string): Promise<void> => {
+  try {
+    await drive.files.delete({ fileId });
+    console.log(`Deleted file from Drive: ${fileId}`);
+  } catch (error) {
+    console.error(`Failed to delete file from Drive: ${error}`);
+    throw new Error(`Gagal menghapus file: ${error}`);
   }
 };
