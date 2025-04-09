@@ -75,8 +75,10 @@ export class SeminarService {
       where: { id: seminarId },
     });
     if (!seminar) throw new Error("Seminar tidak ditemukan");
-    if (seminar.status !== "DRAFT")
-      throw new Error("Hanya seminar yang masih DRAFT yang bisa di-edit");
+    if (seminar.status !== "DRAFT" && seminar.status !== "SUBMITTED")
+      throw new Error(
+        "Hanya seminar yang masih DRAFT atau SUBMITTED yang bisa di-edit"
+      );
 
     return prisma.seminar.update({
       where: { id: seminarId },
@@ -103,7 +105,7 @@ export class SeminarService {
       include: { documents: true, student: true },
     });
     if (!seminar) throw new Error("Seminar tidak ditemukan");
-    if (seminar.status !== "DRAFT")
+    if (seminar.status !== "DRAFT" && seminar.status !== "SUBMITTED")
       throw new Error(
         "Dokumen hanya bisa diunggah pada seminar dengan status DRAFT"
       );
@@ -177,9 +179,9 @@ export class SeminarService {
       include: { documents: true, student: true },
     });
     if (!seminar) throw new Error("Seminar tidak ditemukan");
-    if (seminar.status !== "DRAFT")
+    if (seminar.status !== "SUBMITTED")
       throw new Error(
-        "Dokumen hanya bisa diubah pada seminar dengan status DRAFT"
+        "Dokumen hanya bisa diubah pada seminar dengan status SUBMITTED"
       );
 
     const existingDocs = seminar.documents.find(
@@ -340,7 +342,27 @@ export class SeminarService {
     return prisma.seminar.findFirst({
       where: { studentNIM, type: "PROPOSAL" },
       include: {
+        student: {
+          select: {
+            nim: true,
+            name: true,
+            phoneNumber: true,
+            profilePicture: true,
+          },
+        },
         advisors: {
+          include: {
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+        assessors: {
           include: {
             lecturer: {
               select: {
@@ -354,6 +376,14 @@ export class SeminarService {
         },
         documents: {
           select: { documentType: true, fileName: true, fileURL: true },
+        },
+        assessments: {
+          select: {
+            writingScore: true,
+            presentationScore: true,
+            guidanceScore: true,
+            finalScore: true,
+          },
         },
       },
     });
@@ -402,5 +432,119 @@ export class SeminarService {
       },
       include: { advisors: true, assessors: true, documents: true },
     });
+  }
+
+  async assessProposalSeminar(
+    seminarId: number,
+    lecturerNIP: string,
+    writingScore: number,
+    presentationScore: number,
+    titleScore: number,
+    guidanceScore: number,
+    feedback?: string
+  ): Promise<Seminar> {
+    const seminar = await prisma.seminar.findUnique({
+      where: {
+        id: seminarId,
+      },
+      include: {
+        advisors: { include: { lecturer: true } },
+        assessors: { include: { lecturer: true } },
+        assessments: true,
+      },
+    });
+
+    if (!seminar) throw new Error("Seminar tidak ditemukan");
+
+    if (seminar.status !== "SCHEDULED")
+      throw new Error(
+        "Hanya seminar dengan status SCHEDULED yang bisa dinilai"
+      );
+
+    const isAdvisor = seminar.advisors.some(
+      (advisor) => advisor.lecturerNIP === lecturerNIP
+    );
+    const isAssessor = seminar.assessors.some(
+      (assessor) => assessor.lecturerNIP === lecturerNIP
+    );
+
+    if (!isAdvisor && !isAssessor)
+      throw new Error("Anda tidak berwenang untuk menilai seminar ini");
+
+    const scores = [writingScore, presentationScore, titleScore, guidanceScore];
+
+    for (const score of scores) {
+      if (score < 0 || score > 100) {
+        throw new Error("Setiap nilai harus antara 0 sampai 100");
+      }
+    }
+
+    const finalScore =
+      scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+    const lecturerRole = isAdvisor ? "ADVISOR" : "ASSESSOR";
+
+    await prisma.assessment.upsert({
+      where: {
+        seminarID_lecturerNIP: {
+          seminarID: seminarId,
+          lecturerNIP,
+        },
+      },
+      update: {
+        writingScore,
+        presentationScore,
+        titleScore,
+        guidanceScore,
+        finalScore,
+        feedback,
+      },
+      create: {
+        seminarID: seminarId,
+        lecturerNIP,
+        lecturerRole,
+        writingScore,
+        presentationScore,
+        titleScore,
+        guidanceScore,
+        finalScore,
+        feedback,
+      },
+    });
+
+    const totalEvaluators = seminar.advisors.length + seminar.assessors.length;
+    const assessmentsCount =
+      seminar.assessments.filter(
+        (assessmentCount) => assessmentCount.seminarID === seminarId
+      ).length + 1;
+
+    const allAssess = assessmentsCount === totalEvaluators;
+
+    if (allAssess) {
+      return prisma.seminar.update({
+        where: {
+          id: seminarId,
+        },
+        data: {
+          status: "COMPLETED",
+        },
+        include: {
+          advisors: true,
+          assessors: true,
+          assessments: true,
+          student: true,
+        },
+      });
+    }
+
+    return prisma.seminar.findUnique({
+      where: { id: seminarId },
+      include: {
+        advisors: true,
+        assessors: true,
+        assessments: true,
+        student: true,
+      },
+    }) as Promise<Seminar>;
   }
 }

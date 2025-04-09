@@ -8,6 +8,7 @@ import {
   getSeminarByStudentNIM,
   updateSeminarProposalDocument,
   updateRegisterProposalSeminar,
+  assessProposalSeminar,
 } from "../controllers/seminar.controller";
 import multer from "multer";
 import { authenticateJWT, restrictTo } from "../middlewares/auth";
@@ -51,5 +52,12 @@ router.put(
 router.get("/", getAllSeminars);
 router.get("/:id", getSeminarDetail);
 router.get("/student/:nim", getSeminarByStudentNIM);
+
+router.post(
+  "/:seminarId/assess",
+  authenticateJWT,
+  restrictTo("LECTURER"),
+  assessProposalSeminar
+);
 
 export default router;

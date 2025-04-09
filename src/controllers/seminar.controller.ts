@@ -2,7 +2,13 @@ import { Request, Response, RequestHandler } from "express";
 import { SeminarService } from "../services/seminar.service";
 
 interface AuthenticatedRequest extends Request {
-  user?: { id: number; email: string; role: string; nim?: string };
+  user?: {
+    id: number;
+    email: string;
+    role: string;
+    nim?: string;
+    nip?: string;
+  };
 }
 
 const seminarService = new SeminarService();
@@ -14,6 +20,7 @@ export const registerProposalSeminar: RequestHandler = async (
   try {
     const { title, advisorNIPs } = req.body;
     const studentNIM = req.user?.nim;
+    console.log(req.user);
 
     if (!studentNIM) {
       res.status(403).json({
@@ -61,17 +68,21 @@ export const updateRegisterProposalSeminar: RequestHandler = async (
     }
 
     const seminar = await seminarService.updateRegisterSeminarPropoal(
-      parseInt(id),
+      seminarId,
       title,
       advisorNIPs
     );
     res
       .status(200)
-      .json({ success: true, data: seminar, message: "Seminar diperbarui" });
+      .json({ success: true, seminar, message: "Seminar diperbarui" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Gagal memperbarui seminar", error });
+    console.error("Error in updateRegisterProposalSeminar:", error); // Tambahkan log
+    res.status(500).json({
+      success: false,
+      message: "Gagal memperbarui seminar",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+    });
   }
 };
 
@@ -146,7 +157,7 @@ export const updateSeminarProposalDocument: RequestHandler = async (
 
     res.status(200).json({
       success: true,
-      data: updatedDocument,
+      seminarDocument: updatedDocument,
       message: "Dokumen seminar berhasil diperbarui",
     });
   } catch (error) {
@@ -288,5 +299,60 @@ export const getSeminarByStudentNIM: RequestHandler = async (
       error:
         error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
+  }
+};
+
+export const assessProposalSeminar: RequestHandler = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const { seminarId } = req.params;
+    const {
+      writingScore,
+      presentationScore,
+      titleScore,
+      guidanceScore,
+      feedback,
+    } = req.body;
+
+    const lecturerNIP = req.user?.nip;
+
+    if (!lecturerNIP) {
+      res.status(403).json({
+        success: false,
+        message: "NIP tidak ditemukan",
+      });
+      return;
+    }
+    const seminar = await seminarService.assessProposalSeminar(
+      parseInt(seminarId),
+      lecturerNIP,
+      writingScore,
+      presentationScore,
+      titleScore,
+      guidanceScore,
+      feedback
+    );
+
+    res.status(200).json({
+      success: true,
+      seminar,
+      message: "Berhasil menilai seminar proposal",
+    });
+  } catch (error) {
+    console.error("Gagal menilai seminar: ", error);
+    res
+      .status(
+        error instanceof Error && error.message === "Seminar tidak ditemukan"
+          ? 404
+          : 500
+      )
+      .json({
+        success: false,
+        message: "Terjadi kesalahan saat menilai seminar",
+        error:
+          error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+      });
   }
 };
