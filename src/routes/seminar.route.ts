@@ -54,7 +54,7 @@ router.get("/:id", getSeminarDetail);
 router.get("/student/:nim", getSeminarByStudentNIM);
 
 router.post(
-  "/:seminarId/assess",
+  "/:id/assess",
   authenticateJWT,
   restrictTo("LECTURER"),
   assessProposalSeminar
