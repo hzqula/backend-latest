@@ -67,7 +67,7 @@ export const updateRegisterProposalSeminar: RequestHandler = async (
       });
     }
 
-    const seminar = await seminarService.updateRegisterSeminarPropoal(
+    const seminar = await seminarService.updateRegisterProposalSeminar(
       seminarId,
       title,
       advisorNIPs
@@ -177,14 +177,14 @@ export const updateSeminarProposalDocument: RequestHandler = async (
   }
 };
 
-export const finalizeSeminar: RequestHandler = async (
+export const scheduleProposalSeminar: RequestHandler = async (
   req: AuthenticatedRequest,
   res: Response
 ) => {
   try {
     const { seminarId, time, room, assessorNIPs } = req.body;
 
-    const seminar = await seminarService.finalizeSeminar(
+    const seminar = await seminarService.scheduleProposalSeminar(
       parseInt(seminarId),
       new Date(time),
       room,
@@ -307,7 +307,7 @@ export const assessProposalSeminar: RequestHandler = async (
   res: Response
 ) => {
   try {
-    const { seminarId } = req.params;
+    const { id } = req.params;
     const {
       writingScore,
       presentationScore,
@@ -325,13 +325,14 @@ export const assessProposalSeminar: RequestHandler = async (
       });
       return;
     }
+
     const seminar = await seminarService.assessProposalSeminar(
-      parseInt(seminarId),
+      parseInt(id),
       lecturerNIP,
       writingScore,
       presentationScore,
       titleScore,
-      guidanceScore,
+      guidanceScore !== undefined ? guidanceScore : null, // Kirim null jika guidanceScore tidak ada
       feedback
     );
 

@@ -66,7 +66,7 @@ export class SeminarService {
     });
   }
 
-  async updateRegisterSeminarPropoal(
+  async updateRegisterProposalSeminar(
     seminarId: number,
     title: string,
     advisorNIPs: string[]
@@ -97,7 +97,6 @@ export class SeminarService {
     seminarId: number,
     documentType: DocumentType,
     file: Buffer,
-    // fileName: string,
     mimeType: string
   ): Promise<any> {
     const seminar = await prisma.seminar.findUnique({
@@ -279,6 +278,11 @@ export class SeminarService {
             lecturer: { select: { name: true, nip: true } },
           },
         },
+        assessments: {
+          select: {
+            lecturerNIP: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -327,6 +331,25 @@ export class SeminarService {
             documentType: true,
             fileName: true,
             fileURL: true,
+          },
+        },
+        assessments: {
+          select: {
+            writingScore: true,
+            presentationScore: true,
+            titleScore: true,
+            guidanceScore: true,
+            finalScore: true,
+            feedback: true,
+            lecturerNIP: true, // Sertakan lecturerNIP langsung
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
           },
         },
       },
@@ -381,15 +404,26 @@ export class SeminarService {
           select: {
             writingScore: true,
             presentationScore: true,
+            titleScore: true, // Tambah titleScore
             guidanceScore: true,
             finalScore: true,
+            feedback: true, // Tambah feedback
+            lecturerNIP: true, // Sertakan lecturerNIP
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
           },
         },
       },
     });
   }
 
-  async finalizeSeminar(
+  async scheduleProposalSeminar(
     seminarId: number,
     time: Date,
     room: string,
@@ -440,7 +474,7 @@ export class SeminarService {
     writingScore: number,
     presentationScore: number,
     titleScore: number,
-    guidanceScore: number,
+    guidanceScore: number | null, // Ubah menjadi nullable
     feedback?: string
   ): Promise<Seminar> {
     const seminar = await prisma.seminar.findUnique({
@@ -450,7 +484,19 @@ export class SeminarService {
       include: {
         advisors: { include: { lecturer: true } },
         assessors: { include: { lecturer: true } },
-        assessments: true,
+        assessments: {
+          select: {
+            lecturerNIP: true,
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -471,52 +517,60 @@ export class SeminarService {
     if (!isAdvisor && !isAssessor)
       throw new Error("Anda tidak berwenang untuk menilai seminar ini");
 
-    const scores = [writingScore, presentationScore, titleScore, guidanceScore];
-
-    for (const score of scores) {
+    // Validasi skor
+    const requiredScores = [writingScore, presentationScore, titleScore];
+    for (const score of requiredScores) {
       if (score < 0 || score > 100) {
         throw new Error("Setiap nilai harus antara 0 sampai 100");
       }
     }
 
-    const finalScore =
-      scores.reduce((sum, score) => sum + score, 0) / scores.length;
-
+    // Validasi guidanceScore berdasarkan peran
     const lecturerRole = isAdvisor ? "ADVISOR" : "ASSESSOR";
+    let finalScore: number;
 
-    await prisma.assessment.upsert({
-      where: {
-        seminarID_lecturerNIP: {
-          seminarID: seminarId,
-          lecturerNIP,
-        },
-      },
-      update: {
-        writingScore,
-        presentationScore,
-        titleScore,
-        guidanceScore,
-        finalScore,
-        feedback,
-      },
-      create: {
+    if (lecturerRole === "ADVISOR") {
+      // Untuk pembimbing, guidanceScore wajib
+      if (guidanceScore === null || guidanceScore === undefined) {
+        throw new Error("Guidance score wajib diisi oleh pembimbing");
+      }
+      if (guidanceScore < 0 || guidanceScore > 100) {
+        throw new Error("Guidance score harus antara 0 sampai 100");
+      }
+      // Hitung finalScore untuk pembimbing
+      finalScore =
+        (writingScore + presentationScore + titleScore + guidanceScore) / 4;
+    } else {
+      // Untuk penguji, guidanceScore tidak digunakan
+      finalScore = (writingScore + presentationScore + titleScore) / 3;
+    }
+
+    // Cek apakah dosen sudah menilai seminar ini
+    const existingAssessment = seminar.assessments.find(
+      (assessment) => assessment.lecturerNIP === lecturerNIP
+    );
+
+    if (existingAssessment) {
+      throw new Error("Anda sudah menilai seminar ini");
+    }
+
+    // Simpan penilaian
+    await prisma.assessment.create({
+      data: {
         seminarID: seminarId,
         lecturerNIP,
         lecturerRole,
         writingScore,
         presentationScore,
         titleScore,
-        guidanceScore,
+        guidanceScore: lecturerRole === "ADVISOR" ? guidanceScore : null, // Simpan guidanceScore hanya untuk pembimbing
         finalScore,
         feedback,
       },
     });
 
     const totalEvaluators = seminar.advisors.length + seminar.assessors.length;
-    const assessmentsCount =
-      seminar.assessments.filter(
-        (assessmentCount) => assessmentCount.seminarID === seminarId
-      ).length + 1;
+    const assessmentsCount = seminar.assessments.length + 1;
 
     const allAssess = assessmentsCount === totalEvaluators;
 
@@ -529,9 +583,27 @@ export class SeminarService {
           status: "COMPLETED",
         },
         include: {
-          advisors: true,
-          assessors: true,
-          assessments: true,
+          advisors: { include: { lecturer: true } },
+          assessors: { include: { lecturer: true } },
+          assessments: {
+            select: {
+              writingScore: true,
+              presentationScore: true,
+              titleScore: true,
+              guidanceScore: true,
+              finalScore: true,
+              feedback: true,
+              lecturerNIP: true,
+              lecturer: {
+                select: {
+                  nip: true,
+                  name: true,
+                  phoneNumber: true,
+                  profilePicture: true,
+                },
+              },
+            },
+          },
           student: true,
         },
       });
@@ -540,9 +612,27 @@ export class SeminarService {
     return prisma.seminar.findUnique({
       where: { id: seminarId },
       include: {
-        advisors: true,
-        assessors: true,
-        assessments: true,
+        advisors: { include: { lecturer: true } },
+        assessors: { include: { lecturer: true } },
+        assessments: {
+          select: {
+            writingScore: true,
+            presentationScore: true,
+            titleScore: true,
+            guidanceScore: true,
+            finalScore: true,
+            feedback: true,
+            lecturerNIP: true,
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
         student: true,
       },
     }) as Promise<Seminar>;

@@ -2,7 +2,7 @@ import express from "express";
 import {
   registerProposalSeminar,
   uploadProposalSeminarDocument,
-  finalizeSeminar,
+  scheduleProposalSeminar,
   getAllSeminars,
   getSeminarDetail,
   getSeminarByStudentNIM,
@@ -36,10 +36,10 @@ router.put(
   updateSeminarProposalDocument
 );
 router.put(
-  "/proposal-finalize",
+  "/proposal-scheduled",
   authenticateJWT,
   restrictTo("COORDINATOR"),
-  finalizeSeminar
+  scheduleProposalSeminar
 );
 
 router.put(
