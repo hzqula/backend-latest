@@ -30,6 +30,7 @@ export const authenticateJWT = (
       email: string;
       role: string;
       nim?: string;
+      nip?: string;
     };
     req.user = decoded;
     next();
