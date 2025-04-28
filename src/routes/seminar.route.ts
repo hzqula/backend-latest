@@ -5,7 +5,6 @@ import {
   scheduleProposalSeminar,
   getAllSeminars,
   getSeminarDetail,
-  getSeminarByStudentNIM,
   updateSeminarProposalDocument,
   updateRegisterProposalSeminar,
   assessProposalSeminar,
@@ -51,7 +50,6 @@ router.put(
 
 router.get("/", getAllSeminars);
 router.get("/:id", getSeminarDetail);
-router.get("/student/:nim", getSeminarByStudentNIM);
 
 router.post(
   "/:id/assess",

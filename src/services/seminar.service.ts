@@ -1,3 +1,4 @@
+// seminar.service.ts
 import { Seminar, DocumentType, Student } from "@prisma/client";
 import {
   createFolder,
@@ -249,8 +250,17 @@ export class SeminarService {
     return updatedDocument;
   }
 
-  async getAllSeminars(): Promise<Seminar[]> {
-    const seminars = prisma.seminar.findMany({
+  // Ambil semua seminar dengan data minimum
+  async getAllSeminars(
+    filters: { studentNIM?: string; type?: "PROPOSAL" | "HASIL" } = {}
+  ): Promise<Seminar[]> {
+    const { studentNIM, type } = filters;
+
+    const seminars = await prisma.seminar.findMany({
+      where: {
+        studentNIM: studentNIM ? studentNIM : undefined,
+        type: type ? type : undefined,
+      },
       select: {
         id: true,
         type: true,
@@ -287,9 +297,10 @@ export class SeminarService {
       orderBy: { createdAt: "desc" },
     });
 
-    return seminars;
+    return seminars as Seminar[];
   }
 
+  // Ambil detail seminar berdasarkan ID
   async getSeminarDetail(seminarID: number): Promise<Seminar | null> {
     const seminar = await prisma.seminar.findUnique({
       where: { id: seminarID },
@@ -337,11 +348,11 @@ export class SeminarService {
           select: {
             writingScore: true,
             presentationScore: true,
-            titleScore: true,
-            guidanceScore: true,
+            masteryScore: true,
+            characteristicScore: true,
             finalScore: true,
             feedback: true,
-            lecturerNIP: true, // Sertakan lecturerNIP langsung
+            lecturerNIP: true,
             lecturer: {
               select: {
                 nip: true,
@@ -354,73 +365,12 @@ export class SeminarService {
         },
       },
     });
+
     if (!seminar) {
       throw new Error("Seminar tidak ditemukan");
     }
 
     return seminar;
-  }
-
-  async getSeminarByStudentNIM(studentNIM: string): Promise<any> {
-    return prisma.seminar.findFirst({
-      where: { studentNIM, type: "PROPOSAL" },
-      include: {
-        student: {
-          select: {
-            nim: true,
-            name: true,
-            phoneNumber: true,
-            profilePicture: true,
-          },
-        },
-        advisors: {
-          include: {
-            lecturer: {
-              select: {
-                nip: true,
-                name: true,
-                phoneNumber: true,
-                profilePicture: true,
-              },
-            },
-          },
-        },
-        assessors: {
-          include: {
-            lecturer: {
-              select: {
-                nip: true,
-                name: true,
-                phoneNumber: true,
-                profilePicture: true,
-              },
-            },
-          },
-        },
-        documents: {
-          select: { documentType: true, fileName: true, fileURL: true },
-        },
-        assessments: {
-          select: {
-            writingScore: true,
-            presentationScore: true,
-            titleScore: true, // Tambah titleScore
-            guidanceScore: true,
-            finalScore: true,
-            feedback: true, // Tambah feedback
-            lecturerNIP: true, // Sertakan lecturerNIP
-            lecturer: {
-              select: {
-                nip: true,
-                name: true,
-                phoneNumber: true,
-                profilePicture: true,
-              },
-            },
-          },
-        },
-      },
-    });
   }
 
   async scheduleProposalSeminar(
@@ -473,8 +423,8 @@ export class SeminarService {
     lecturerNIP: string,
     writingScore: number,
     presentationScore: number,
-    titleScore: number,
-    guidanceScore: number | null, // Ubah menjadi nullable
+    masteryScore: number,
+    characteristicScore: number | null,
     feedback?: string
   ): Promise<Seminar> {
     const seminar = await prisma.seminar.findUnique({
@@ -517,35 +467,33 @@ export class SeminarService {
     if (!isAdvisor && !isAssessor)
       throw new Error("Anda tidak berwenang untuk menilai seminar ini");
 
-    // Validasi skor
-    const requiredScores = [writingScore, presentationScore, titleScore];
+    const requiredScores = [writingScore, presentationScore, masteryScore];
     for (const score of requiredScores) {
       if (score < 0 || score > 100) {
         throw new Error("Setiap nilai harus antara 0 sampai 100");
       }
     }
 
-    // Validasi guidanceScore berdasarkan peran
     const lecturerRole = isAdvisor ? "ADVISOR" : "ASSESSOR";
     let finalScore: number;
 
     if (lecturerRole === "ADVISOR") {
-      // Untuk pembimbing, guidanceScore wajib
-      if (guidanceScore === null || guidanceScore === undefined) {
+      if (characteristicScore === null || characteristicScore === undefined) {
         throw new Error("Guidance score wajib diisi oleh pembimbing");
       }
-      if (guidanceScore < 0 || guidanceScore > 100) {
+      if (characteristicScore < 0 || characteristicScore > 100) {
         throw new Error("Guidance score harus antara 0 sampai 100");
       }
-      // Hitung finalScore untuk pembimbing
       finalScore =
-        (writingScore + presentationScore + titleScore + guidanceScore) / 4;
+        (writingScore +
+          presentationScore +
+          masteryScore +
+          characteristicScore) /
+        4;
     } else {
-      // Untuk penguji, guidanceScore tidak digunakan
-      finalScore = (writingScore + presentationScore + titleScore) / 3;
+      finalScore = (writingScore + presentationScore + masteryScore) / 3;
     }
 
-    // Cek apakah dosen sudah menilai seminar ini
     const existingAssessment = seminar.assessments.find(
       (assessment) => assessment.lecturerNIP === lecturerNIP
     );
@@ -554,7 +502,6 @@ export class SeminarService {
       throw new Error("Anda sudah menilai seminar ini");
     }
 
-    // Simpan penilaian
     await prisma.assessment.create({
       data: {
         seminarID: seminarId,
@@ -562,8 +509,9 @@ export class SeminarService {
         lecturerRole,
         writingScore,
         presentationScore,
-        titleScore,
-        guidanceScore: lecturerRole === "ADVISOR" ? guidanceScore : null, // Simpan guidanceScore hanya untuk pembimbing
+        masteryScore,
+        characteristicScore:
+          lecturerRole === "ADVISOR" ? characteristicScore : null,
         finalScore,
         feedback,
       },
@@ -589,8 +537,8 @@ export class SeminarService {
             select: {
               writingScore: true,
               presentationScore: true,
-              titleScore: true,
-              guidanceScore: true,
+              masteryScore: true,
+              characteristicScore: true,
               finalScore: true,
               feedback: true,
               lecturerNIP: true,
@@ -618,8 +566,8 @@ export class SeminarService {
           select: {
             writingScore: true,
             presentationScore: true,
-            titleScore: true,
-            guidanceScore: true,
+            masteryScore: true,
+            characteristicScore: true,
             finalScore: true,
             feedback: true,
             lecturerNIP: true,

@@ -264,44 +264,6 @@ export const getSeminarDetail: RequestHandler = async (
   }
 };
 
-export const getSeminarByStudentNIM: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
-  try {
-    const studentNIM = req.params.nim;
-    if (!studentNIM) {
-      res.status(400).json({
-        success: false,
-        message: "NIM mahasiswa tidak ditemukan",
-      });
-      return;
-    }
-    const seminar = await seminarService.getSeminarByStudentNIM(studentNIM);
-    if (!seminar) {
-      res.status(200).json({
-        success: true,
-        seminar: null,
-        message: "Belum ada seminar terdaftar untuk mahasiswa ini",
-      });
-      return;
-    }
-    res.status(200).json({
-      success: true,
-      seminar,
-      message: "Berhasil mengambil data seminar",
-    });
-  } catch (error) {
-    console.error("Gagal mengambil seminar:", error);
-    res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan saat mengambil seminar",
-      error:
-        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
-    });
-  }
-};
-
 export const assessProposalSeminar: RequestHandler = async (
   req: AuthenticatedRequest,
   res: Response
@@ -311,8 +273,8 @@ export const assessProposalSeminar: RequestHandler = async (
     const {
       writingScore,
       presentationScore,
-      titleScore,
-      guidanceScore,
+      masteryScore,
+      characteristicScore,
       feedback,
     } = req.body;
 
@@ -331,8 +293,8 @@ export const assessProposalSeminar: RequestHandler = async (
       lecturerNIP,
       writingScore,
       presentationScore,
-      titleScore,
-      guidanceScore !== undefined ? guidanceScore : null, // Kirim null jika guidanceScore tidak ada
+      masteryScore,
+      characteristicScore !== undefined ? characteristicScore : null, // Kirim null jika characteristicScore tidak ada
       feedback
     );
 

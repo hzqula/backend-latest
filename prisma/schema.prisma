@@ -123,12 +123,12 @@ model Assessment {
   id           Int          @id @default(autoincrement())
   lecturerRole LecturerRole @map("lecturer_role")
 
-  writingScore      Float?  @map("writing_score")
-  presentationScore Float?  @map("presentation_score")
-  titleScore        Float?  @map("title_score")
-  guidanceScore     Float?  @map("guidance_score")
-  finalScore        Float?  @map("final_score")
-  feedback          String?
+  presentationScore   Float?  @map("presentation_score") // Penyajian Makalah
+  masteryScore        Float?  @map("mastery_score") // Penguasaan Materi
+  characteristicScore Float?  @map("characteristic_score") // Karakteristik (Pembimbing)
+  writingScore        Float?  @map("writing_score") // Penulisan Makalah`
+  finalScore          Float?  @map("final_score")
+  feedback            String?
 
   lecturerNIP String
   seminarID   Int
