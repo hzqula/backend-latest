@@ -372,6 +372,79 @@ export class SeminarService {
 
     return seminar;
   }
+  // Ambil detail seminar berdasarkan ID
+  async getProposalSeminarByStudentNIM(
+    studentNIM: string
+  ): Promise<Seminar | null> {
+    const seminar = await prisma.seminar.findFirst({
+      where: {
+        studentNIM,
+        type: "PROPOSAL", // Hanya ambil seminar proposal
+      },
+      include: {
+        student: {
+          select: {
+            nim: true,
+            name: true,
+            phoneNumber: true,
+            profilePicture: true,
+          },
+        },
+        advisors: {
+          include: {
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+        assessors: {
+          include: {
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+        documents: {
+          select: {
+            documentType: true,
+            fileName: true,
+            fileURL: true,
+          },
+        },
+        assessments: {
+          select: {
+            writingScore: true,
+            presentationScore: true,
+            masteryScore: true,
+            characteristicScore: true,
+            finalScore: true,
+            feedback: true,
+            lecturerNIP: true,
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return seminar;
+  }
 
   async scheduleProposalSeminar(
     seminarId: number,

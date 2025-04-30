@@ -264,6 +264,31 @@ export const getSeminarDetail: RequestHandler = async (
   }
 };
 
+export const getProposalSeminarByStudentNIM: RequestHandler = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const { nim } = req.params;
+    const seminar = await seminarService.getProposalSeminarByStudentNIM(nim);
+    res.status(200).json({
+      success: true,
+      seminar, // Bisa null jika seminar tidak ditemukan
+      message: seminar
+        ? "Berhasil mengambil seminar mahasiswa"
+        : "Seminar tidak ditemukan untuk mahasiswa ini",
+    });
+  } catch (error) {
+    console.error("Gagal mengambil seminar mahasiswa:", error);
+    res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat mengambil seminar mahasiswa",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+    });
+  }
+};
+
 export const assessProposalSeminar: RequestHandler = async (
   req: AuthenticatedRequest,
   res: Response
