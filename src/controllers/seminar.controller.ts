@@ -344,3 +344,59 @@ export const assessProposalSeminar: RequestHandler = async (
       });
   }
 };
+
+export const updateAssessment: RequestHandler = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+    const {
+      writingScore,
+      presentationScore,
+      masteryScore,
+      characteristicScore,
+      feedback,
+    } = req.body;
+
+    const lecturerNIP = req.user?.nip;
+
+    if (!lecturerNIP) {
+      res.status(403).json({
+        success: false,
+        message: "NIP tidak ditemukan",
+      });
+      return;
+    }
+
+    const seminar = await seminarService.updateAssessment(
+      parseInt(id),
+      lecturerNIP,
+      writingScore,
+      presentationScore,
+      masteryScore,
+      characteristicScore !== undefined ? characteristicScore : null,
+      feedback
+    );
+
+    res.status(200).json({
+      success: true,
+      seminar,
+      message: "Berhasil memperbarui penilaian seminar",
+    });
+  } catch (error) {
+    console.error("Gagal memperbarui penilaian seminar: ", error);
+    res
+      .status(
+        error instanceof Error && error.message === "Seminar tidak ditemukan"
+          ? 404
+          : 500
+      )
+      .json({
+        success: false,
+        message: "Terjadi kesalahan saat memperbarui penilaian seminar",
+        error:
+          error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+      });
+  }
+};

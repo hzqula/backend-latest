@@ -59,7 +59,7 @@ async function main() {
   await prisma.coordinator.create({
     data: {
       id: 1,
-      name: "Teknik Lingkunga UR",
+      name: "Teknik Lingkungan UR",
       profilePicture: "https://example.com/coordinator1.jpg",
     },
   });

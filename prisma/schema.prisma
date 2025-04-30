@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "app/generated/prisma/client"
 }
 
 datasource db {
@@ -123,12 +124,13 @@ model Assessment {
   id           Int          @id @default(autoincrement())
   lecturerRole LecturerRole @map("lecturer_role")
 
-  presentationScore   Float?  @map("presentation_score") // Penyajian Makalah
-  masteryScore        Float?  @map("mastery_score") // Penguasaan Materi
-  characteristicScore Float?  @map("characteristic_score") // Karakteristik (Pembimbing)
-  writingScore        Float?  @map("writing_score") // Penulisan Makalah`
-  finalScore          Float?  @map("final_score")
+  presentationScore   Float?   @map("presentation_score") // Penyajian Makalah
+  masteryScore        Float?   @map("mastery_score") // Penguasaan Materi
+  characteristicScore Float?   @map("characteristic_score") // Karakteristik (Pembimbing)
+  writingScore        Float?   @map("writing_score") // Penulisan Makalah`
+  finalScore          Float?   @map("final_score")
   feedback            String?
+  createdAt           DateTime @default(now())
 
   lecturerNIP String
   seminarID   Int
