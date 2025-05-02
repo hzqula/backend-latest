@@ -301,6 +301,7 @@ export class SeminarService {
   }
 
   // Ambil detail seminar berdasarkan ID
+  // seminar.service.ts
   async getSeminarDetail(seminarID: number): Promise<Seminar | null> {
     const seminar = await prisma.seminar.findUnique({
       where: { id: seminarID },
@@ -353,6 +354,7 @@ export class SeminarService {
             finalScore: true,
             feedback: true,
             lecturerNIP: true,
+            createdAt: true,
             lecturer: {
               select: {
                 nip: true,
@@ -644,6 +646,138 @@ export class SeminarService {
             finalScore: true,
             feedback: true,
             lecturerNIP: true,
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+        student: true,
+      },
+    }) as Promise<Seminar>;
+  }
+
+  async updateAssessment(
+    seminarId: number,
+    lecturerNIP: string,
+    writingScore: number,
+    presentationScore: number,
+    masteryScore: number,
+    characteristicScore: number | null,
+    feedback?: string
+  ): Promise<Seminar> {
+    const seminar = await prisma.seminar.findUnique({
+      where: { id: seminarId },
+      include: {
+        advisors: { include: { lecturer: true } },
+        assessors: { include: { lecturer: true } },
+        assessments: {
+          select: {
+            id: true, // Tambahkan id untuk update
+            lecturerNIP: true,
+            createdAt: true, // Untuk memeriksa batas waktu
+            lecturer: {
+              select: {
+                nip: true,
+                name: true,
+                phoneNumber: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!seminar) throw new Error("Seminar tidak ditemukan");
+
+    const existingAssessment = seminar.assessments.find(
+      (assessment) => assessment.lecturerNIP === lecturerNIP
+    );
+    if (!existingAssessment) {
+      throw new Error("Penilaian tidak ditemukan untuk dosen ini");
+    }
+
+    // Cek apakah masih dalam batas waktu 1 minggu
+    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 1 minggu dalam milidetik
+    const now = new Date();
+    const assessmentDate = new Date(existingAssessment.createdAt);
+    if (now.getTime() - assessmentDate.getTime() > oneWeekInMs) {
+      throw new Error("Batas waktu untuk memperbarui penilaian telah habis");
+    }
+
+    const isAdvisor = seminar.advisors.some(
+      (advisor) => advisor.lecturerNIP === lecturerNIP
+    );
+    const isAssessor = seminar.assessors.some(
+      (assessor) => assessor.lecturerNIP === lecturerNIP
+    );
+
+    if (!isAdvisor && !isAssessor) {
+      throw new Error("Anda tidak berwenang untuk memperbarui penilaian ini");
+    }
+
+    const requiredScores = [writingScore, presentationScore, masteryScore];
+    for (const score of requiredScores) {
+      if (score < 0 || score > 100) {
+        throw new Error("Setiap nilai harus antara 0 sampai 100");
+      }
+    }
+
+    const lecturerRole = isAdvisor ? "ADVISOR" : "ASSESSOR";
+    let finalScore: number;
+
+    if (lecturerRole === "ADVISOR") {
+      if (characteristicScore === null || characteristicScore === undefined) {
+        throw new Error("Guidance score wajib diisi oleh pembimbing");
+      }
+      if (characteristicScore < 0 || characteristicScore > 100) {
+        throw new Error("Guidance score harus antara 0 sampai 100");
+      }
+      finalScore =
+        (writingScore +
+          presentationScore +
+          masteryScore +
+          characteristicScore) /
+        4;
+    } else {
+      finalScore = (writingScore + presentationScore + masteryScore) / 3;
+    }
+
+    // Update penilaian
+    await prisma.assessment.update({
+      where: { id: existingAssessment.id },
+      data: {
+        writingScore,
+        presentationScore,
+        masteryScore,
+        characteristicScore:
+          lecturerRole === "ADVISOR" ? characteristicScore : null,
+        finalScore,
+        feedback,
+      },
+    });
+
+    // Kembalikan seminar yang diperbarui
+    return prisma.seminar.findUnique({
+      where: { id: seminarId },
+      include: {
+        advisors: { include: { lecturer: true } },
+        assessors: { include: { lecturer: true } },
+        assessments: {
+          select: {
+            writingScore: true,
+            presentationScore: true,
+            masteryScore: true,
+            characteristicScore: true,
+            finalScore: true,
+            feedback: true,
+            lecturerNIP: true,
+            createdAt: true,
             lecturer: {
               select: {
                 nip: true,
