@@ -34,7 +34,7 @@ export class AuthService {
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser && existingUser.isVerify && !resetPassword)  {
+    if (existingUser && existingUser.isVerify && !resetPassword) {
       throw new Error("Email tersebut sudah didaftarkan");
     }
 
@@ -150,7 +150,7 @@ export class AuthService {
           },
         });
       } else if (role === UserRole.LECTURER) {
-        profileData = await await lecturerService.createLecturer({
+        profileData = await lecturerService.createLecturer({
           nip: nipOrNim,
           name,
           phoneNumber,
@@ -197,7 +197,8 @@ export class AuthService {
     if (!user) throw new Error("Email atau password yang dimasukkan salah");
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) throw new Error("Password yang dimasukkan salah");
+    if (!validPassword)
+      throw new Error("Email atau password yang dimasukkan salah");
 
     let profile;
     if (user.role === UserRole.STUDENT && user.student) profile = user.student;
