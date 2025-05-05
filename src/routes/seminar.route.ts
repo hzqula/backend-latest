@@ -1,71 +1,12 @@
 import express from "express";
 import {
-  registerProposalSeminar,
-  uploadProposalSeminarDocument,
-  scheduleProposalSeminar,
   getAllSeminars,
   getSeminarDetail,
-  updateSeminarProposalDocument,
-  updateRegisterProposalSeminar,
-  assessProposalSeminar,
-  getProposalSeminarByStudentNIM,
-  updateAssessment,
 } from "../controllers/seminar.controller";
-import multer from "multer";
-import { authenticateJWT, restrictTo } from "../middlewares/auth";
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
-router.post(
-  "/proposal-register",
-  authenticateJWT,
-  restrictTo("STUDENT"),
-  registerProposalSeminar
-);
-router.post(
-  "/proposal-documents",
-  authenticateJWT,
-  restrictTo("STUDENT"),
-  upload.single("file"),
-  uploadProposalSeminarDocument
-);
-
-router.put(
-  "/proposal-documents",
-  upload.single("file"),
-  updateSeminarProposalDocument
-);
-router.put(
-  "/proposal-scheduled",
-  authenticateJWT,
-  restrictTo("COORDINATOR"),
-  scheduleProposalSeminar
-);
-
-router.put(
-  "/:id",
-  authenticateJWT,
-  restrictTo("STUDENT"),
-  updateRegisterProposalSeminar
-);
-
-router.get("/", getAllSeminars);
-router.get("/:id", getSeminarDetail);
-router.get("/student/:nim", authenticateJWT, getProposalSeminarByStudentNIM);
-
-router.post(
-  "/:id/assess",
-  authenticateJWT,
-  restrictTo("LECTURER"),
-  assessProposalSeminar
-);
-// seminar.route.ts
-router.put(
-  "/:id/assess",
-  authenticateJWT,
-  restrictTo("LECTURER"),
-  updateAssessment
-);
+router.get("/seminars", getAllSeminars);
+router.get("/seminars/:id", getSeminarDetail);
 
 export default router;

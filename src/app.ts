@@ -10,6 +10,8 @@ import authRouter from "./routes/auth.route";
 import recaptchaRouter from "./routes/recaptcha.route";
 import resetPassword from "./routes/reset-password.route";
 import seminarRouter from "./routes/seminar.route";
+import seminarProposalRouter from "./routes/seminarProposal.route";
+import seminarResultRouter from "./routes/seminarResult.route";
 import { logAllRequests } from "./middlewares/securityLogMiddleware";
 import { cleanupOldLogs } from "./services/security-log.service";
 
@@ -39,6 +41,8 @@ app.use("/api/lecturers", lecturerRouter);
 app.use("/api/recaptcha", recaptchaRouter);
 app.use("/api/reset-password", resetPassword);
 app.use("/api/seminars", seminarRouter);
+app.use("/api/seminars", seminarProposalRouter);
+app.use("/api/seminars", seminarResultRouter);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error("Unhandled error:", err.stack);
