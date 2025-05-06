@@ -18,7 +18,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post(
   "/proposal-register",
-  authenticateJWT,
+  authenticateJWT, // Tambahkan autentikasi
   restrictTo("STUDENT"),
   registerProposalSeminar
 );
@@ -32,6 +32,7 @@ router.post(
 
 router.put(
   "/proposal-documents",
+  authenticateJWT,
   upload.single("file"),
   updateSeminarProposalDocument
 );
@@ -49,9 +50,9 @@ router.put(
   updateRegisterProposalSeminar
 );
 
-router.get("/", getAllSeminars);
-router.get("/:id", getSeminarDetail);
-router.get("/student/:nim", getSeminarByStudentNIM);
+router.get("/", authenticateJWT, getAllSeminars);
+router.get("/:id", getSeminarDetail); 
+router.get("/student/:nim", authenticateJWT, getSeminarByStudentNIM);
 
 router.post(
   "/:id/assess",
