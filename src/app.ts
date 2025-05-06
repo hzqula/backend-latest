@@ -10,12 +10,56 @@ import authRouter from "./routes/auth.route";
 import recaptchaRouter from "./routes/recaptcha.route";
 import resetPassword from "./routes/reset-password.route";
 import seminarRouter from "./routes/seminar.route";
+import securityLogRouter from "./routes/security-log.route";
 import { logAllRequests } from "./middlewares/securityLogMiddleware";
 import { cleanupOldLogs } from "./services/security-log.service";
+import { authenticateJWT, restrictTo } from "./middlewares/auth";
 
 const app = express();
 
-app.use(helmet());
+
+// Konfigurasi Helmet untuk keamanan
+app.use(
+  helmet({
+    // Content Security Policy (CSP)
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // Izinkan inline styles jika diperlukan
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://www.google.com", "https://www.gstatic.com"], // Izinkan script untuk ReCAPTCHA
+        imgSrc: ["'self'", "data:"], // Izinkan gambar dari self dan data URI
+        connectSrc: ["'self'", "http://localhost:5500"], // Izinkan koneksi ke API Anda
+        frameSrc: ["'self'", "https://www.google.com"], // Izinkan iframe untuk ReCAPTCHA
+      },
+    },
+    // HSTS (Strict-Transport-Security) - Paksa HTTPS
+    hsts: {
+      maxAge: 31536000, // 1 tahun
+      includeSubDomains: true,
+      preload: true,
+    },
+    // X-Frame-Options: Mencegah clickjacking
+    frameguard: {
+      action: "deny",
+    },
+    // X-Content-Type-Options: Mencegah MIME type sniffing
+    noSniff: true,
+    // Referrer-Policy: Kontrol informasi referer
+    referrerPolicy: {
+      policy: "strict-origin-when-cross-origin",
+    },
+    // X-DNS-Prefetch-Control: Nonaktifkan prefetch DNS
+    dnsPrefetchControl: {
+      allow: false,
+    },
+    // X-Permitted-Cross-Domain-Policies: Batasi kebijakan cross-domain
+    permittedCrossDomainPolicies: {
+      permittedPolicies: "none",
+    },
+  })
+);
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -34,11 +78,12 @@ app.get("/", (req: Request, res: Response) => {
 app.use(logAllRequests);
 
 app.use("/api/auth", authRouter);
-app.use("/api/students", studentRouter);
-app.use("/api/lecturers", lecturerRouter);
+app.use("/api/students", authenticateJWT, studentRouter);  
+app.use("/api/lecturers", authenticateJWT, lecturerRouter);
 app.use("/api/recaptcha", recaptchaRouter);
 app.use("/api/reset-password", resetPassword);
 app.use("/api/seminars", seminarRouter);
+app.use("/api/security-logs", authenticateJWT, restrictTo("COORDINATOR"), securityLogRouter);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error("Unhandled error:", err.stack);
