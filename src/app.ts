@@ -14,6 +14,8 @@ import seminarProposalRouter from "./routes/seminarProposal.route";
 import seminarResultRouter from "./routes/seminarResult.route";
 import { logAllRequests } from "./middlewares/securityLogMiddleware";
 import { cleanupOldLogs } from "./services/security-log.service";
+import  SecurityLogRoute  from "./routes/security-log.route";
+import { authenticateJWT, restrictTo } from "./middlewares/auth";
 
 const app = express();
 
@@ -36,13 +38,14 @@ app.get("/", (req: Request, res: Response) => {
 app.use(logAllRequests);
 
 app.use("/api/auth", authRouter);
-app.use("/api/students", studentRouter);
-app.use("/api/lecturers", lecturerRouter);
+app.use("/api/students", authenticateJWT, studentRouter);
+app.use("/api/lecturers", authenticateJWT, lecturerRouter);
 app.use("/api/recaptcha", recaptchaRouter);
 app.use("/api/reset-password", resetPassword);
 app.use("/api/seminars", seminarRouter);
 app.use("/api/seminars", seminarProposalRouter);
 app.use("/api/seminars", seminarResultRouter);
+app.use("/api/security-logs", authenticateJWT, restrictTo("COORDINATOR"), SecurityLogRoute);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error("Unhandled error:", err.stack);
@@ -66,3 +69,4 @@ cron.schedule("0 0 * * *", async () => {
     console.error("Failed to clean up old logs:", error);
   }
 });
+

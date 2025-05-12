@@ -1,4 +1,5 @@
-import { User, UserRole, OTP } from "@prisma/client";
+//auth.services.ts
+import { UserRole } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -19,11 +20,10 @@ interface RegisterData {
   name: string;
   phoneNumber: string;
   profilePicture?: string;
-  role: UserRole;
 }
 
 export class AuthService {
-  async sendOTP(email: string, role: UserRole): Promise<void> {
+  async sendOTP(email: string): Promise<void> {
     if (
       !email.endsWith("@student.unri.ac.id") &&
       !email.endsWith("@lecturer.unri.ac.id")
@@ -35,17 +35,27 @@ export class AuthService {
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser && existingUser.isVerify && !resetPassword) {
-      throw new Error("Email tersebut sudah didaftarkan");
+      throw new Error("Email tersebut sudah didaftarkan yaa");
     }
 
     let tempUser = existingUser;
     if (!existingUser) {
+      // Tentukan role berdasarkan email
+      let role: UserRole;
+      if (email.endsWith("@student.unri.ac.id")) {
+        role = UserRole.STUDENT;
+      } else if (email.endsWith("@lecturer.unri.ac.id")) {
+        role = UserRole.LECTURER;
+      } else {
+        throw new Error("Email tidak sesuai dengan role yang valid");
+      }
+
       tempUser = await prisma.user.create({
         data: {
           email,
           password: "",
-          role,
           isVerify: false,
+          role, // Tambahkan role ke data
         },
       });
     }
@@ -104,7 +114,6 @@ export class AuthService {
       name,
       phoneNumber,
       profilePicture,
-      role,
     } = data;
 
     const tempUser = await prisma.user.findUnique({
@@ -116,16 +125,21 @@ export class AuthService {
       throw new Error("Email tidak ditemukan, silakan daftar ulang");
     }
 
-    if (role === UserRole.STUDENT) {
+    let role: UserRole;
+    if (email.endsWith("@student.unri.ac.id")) {
+      role = UserRole.STUDENT;
       const existingStudent = await prisma.student.findUnique({
         where: { nim: nipOrNim },
       });
       if (existingStudent) throw new Error("NIM sudah digunakan");
-    } else if (role === UserRole.LECTURER) {
+    } else if (email.endsWith("@lecturer.unri.ac.id")) {
+      role = UserRole.LECTURER;
       const existingLecturer = await prisma.lecturer.findUnique({
         where: { nip: nipOrNim },
       });
       if (existingLecturer) throw new Error("NIP sudah digunakan");
+    } else {
+      throw new Error("Email tidak sesuai dengan role yang valid");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -180,7 +194,6 @@ export class AuthService {
       user: {
         id: result.user.id,
         email: result.user.email,
-        role,
         profile: result.profile,
       },
     };
@@ -197,21 +210,28 @@ export class AuthService {
     if (!user) throw new Error("Email atau password yang dimasukkan salah");
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword)
-      throw new Error("Email atau password yang dimasukkan salah");
+    if (!validPassword) throw new Error("Password yang dimasukkan salah");
 
     let profile;
-    if (user.role === UserRole.STUDENT && user.student) profile = user.student;
-    else if (user.role === UserRole.LECTURER && user.lecturer)
+    let role: UserRole;
+    if (user.student) {
+      profile = user.student;
+      role = UserRole.STUDENT;
+    } else if (user.lecturer) {
       profile = user.lecturer;
-    else if (user.role === UserRole.COORDINATOR && user.coordinator)
+      role = UserRole.LECTURER;
+    } else if (user.coordinator) {
       profile = user.coordinator;
+      role = UserRole.COORDINATOR;
+    } else {
+      throw new Error("Role pengguna tidak ditemukan");
+    }
 
     const token = jwt.sign(
       {
         userID: user.id,
         email: user.email,
-        role: user.role,
+        role,
         nim: user.student?.nim,
         nip: user.lecturer?.nip,
       },
@@ -221,7 +241,7 @@ export class AuthService {
 
     return {
       token,
-      user: { id: user.id, email: user.email, role: user.role, profile },
+      user: { id: user.id, email: user.email, profile },
     };
   }
 }
