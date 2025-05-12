@@ -1,4 +1,4 @@
-import { Student } from "@prisma/client";
+import { Student } from "../../prisma/app/generated/prisma/client";
 import { prisma } from "../lib/prisma";
 
 export class StudentService {
