@@ -6,7 +6,7 @@ import {
 
 const router = express.Router();
 
-router.get("/seminars", getAllSeminars);
-router.get("/seminars/:id", getSeminarDetail);
+router.get("/", getAllSeminars);
+router.get("/:id", getSeminarDetail);
 
 export default router;
