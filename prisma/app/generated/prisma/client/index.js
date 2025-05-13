@@ -267,7 +267,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\Kuliah\\Semester VI\\Kerja Praktek\\Project\\backend-latest\\prisma\\app\\generated\\prisma\\client",
+      "value": "C:\\KP\\backend-latest\\prisma\\app\\generated\\prisma\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -281,7 +281,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\Kuliah\\Semester VI\\Kerja Praktek\\Project\\backend-latest\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\KP\\backend-latest\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

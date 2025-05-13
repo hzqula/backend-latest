@@ -156,7 +156,7 @@ enum DocumentType {
   EXAMINER_APPROVAL // Lembar Persetujuan Dosen Penguji
   TRANSCRIPT // Transkip Nilai
   ASSISTANCE_SHEET // Lembar Asistensi
-  FINAL_THESIS // Dokumen Tugas Akhir
+  FINAL_THESIS // Dokumen Tugas Akhir 4 Rangkap
 }
 
 enum SeminarStatus {

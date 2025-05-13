@@ -1,21 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger';
-
+import { getClientIp, getClientDevice } from '../utils/ipUtils';
 
 const prisma = new PrismaClient();
 
 const loginAttempts: Record<string, { count: number; firstAttempt: number }> = {};
-
-const getClientIp = (req: Request): string => {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') return forwarded.split(',')[0];
-  return req.socket.remoteAddress || '127.0.0.1';
-};
-
-const getClientDevice = (req: Request): string => {
-  return req.headers['user-agent'] || 'Unknown';
-};
 
 const containsSqlInjection = (input: string): boolean => {
   const sqlPatterns = [
@@ -207,6 +197,40 @@ export const detectBruteForce = async (req: Request, res: Response, next: NextFu
     
     loginAttempts[ip].count = 0;
     loginAttempts[ip].firstAttempt = now;
+  }
+
+  next();
+};
+
+
+
+export const logResetPasswordAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Reset password successful" : `Reset password failed: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Reset password log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log reset password attempt:", error);
   }
 
   next();

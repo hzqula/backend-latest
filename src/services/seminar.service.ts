@@ -94,6 +94,7 @@ export class SeminarService {
           select: {
             name: true,
             nim: true,
+            profilePicture: true
           },
         },
         folderId: true,
