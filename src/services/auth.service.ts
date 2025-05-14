@@ -3,7 +3,7 @@ import { User, UserRole, OTP } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import sendOTPEmail from "../lib/nodemailer";
+import { sendOTPEmail } from "../lib/nodemailer";
 import { StudentService } from "./student.service";
 import { LecturerService } from "./lecturer.service";
 import { JWT_SECRET } from "../configs/env";
