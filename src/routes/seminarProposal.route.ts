@@ -8,6 +8,7 @@ import {
   getProposalSeminarByStudentNIM,
   assessProposalSeminar,
   updateAssessment,
+  updateProposalSeminarSchedule,
 } from "../controllers/seminarProposal.controller";
 import multer from "multer";
 import { authenticateJWT, restrictTo } from "../middlewares/auth";
@@ -59,6 +60,13 @@ router.put(
   authenticateJWT,
   restrictTo("LECTURER"),
   updateAssessment
+);
+
+router.put(
+  "/proposal-schedule/:id",
+  authenticateJWT,
+  restrictTo("COORDINATOR"),
+  updateProposalSeminarSchedule
 );
 
 export default router;

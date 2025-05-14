@@ -258,6 +258,78 @@ export class SeminarProposalService {
     });
   }
 
+  // seminarProposal.service.ts (perbarui metode updateProposalSeminarSchedule)
+  async updateProposalSeminarSchedule(
+    seminarId: number,
+    time: Date,
+    room: string,
+    assessorNIPs: string[]
+  ): Promise<Seminar> {
+    const seminar = await prisma.seminar.findUnique({
+      where: { id: seminarId },
+      include: { assessors: true },
+    });
+
+    if (!seminar) {
+      throw new Error("Seminar tidak ditemukan");
+    }
+
+    if (seminar.type !== "PROPOSAL") {
+      throw new Error("Hanya seminar proposal yang bisa diperbarui jadwalnya");
+    }
+
+    if (seminar.status !== "SCHEDULED") {
+      throw new Error(
+        "Hanya seminar dengan status SCHEDULED yang bisa diperbarui jadwalnya"
+      );
+    }
+
+    if (!seminar.time) {
+      throw new Error("Jadwal seminar belum ditentukan (waktu tidak tersedia)");
+    }
+
+    // Pengecekan batas waktu: satu jam sebelum jadwal seminar
+    const currentTime = new Date(); // Waktu saat ini (11:00 PM WIB, 13 Mei 2025)
+    const oneHourBefore = new Date(seminar.time);
+    oneHourBefore.setHours(oneHourBefore.getHours() - 1);
+
+    if (currentTime > oneHourBefore) {
+      throw new Error(
+        "Tidak dapat memperbarui jadwal, batas waktu satu jam sebelum seminar telah tercapai"
+      );
+    }
+
+    // Validasi assessorNIPs
+    const lecturers = await prisma.lecturer.findMany({
+      where: { nip: { in: assessorNIPs } },
+    });
+    if (lecturers.length !== assessorNIPs.length) {
+      const missingNIPs = assessorNIPs.filter(
+        (nip) => !lecturers.some((lecturer) => lecturer.nip === nip)
+      );
+      throw new Error(
+        `Dosen dengan NIP berikut tidak ditemukan: ${missingNIPs.join(", ")}`
+      );
+    }
+
+    // Hapus semua SeminarAssessor yang terkait dengan seminar ini
+    await prisma.seminarAssessor.deleteMany({
+      where: { seminarID: seminarId },
+    });
+
+    return prisma.seminar.update({
+      where: { id: seminarId },
+      data: {
+        time,
+        room,
+        assessors: {
+          create: assessorNIPs.map((nip) => ({ lecturerNIP: nip })),
+        },
+      },
+      include: { advisors: true, assessors: true, documents: true },
+    });
+  }
+
   async assessProposalSeminar(
     seminarId: number,
     lecturerNIP: string,

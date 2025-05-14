@@ -212,6 +212,41 @@ export const scheduleProposalSeminar: RequestHandler = async (
   }
 };
 
+export const updateProposalSeminarSchedule: RequestHandler = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const { seminarId, time, room, assessorNIPs } = req.body;
+
+    const seminar = await seminarProposalService.updateProposalSeminarSchedule(
+      parseInt(seminarId),
+      new Date(time),
+      room,
+      assessorNIPs
+    );
+    res.status(200).json({
+      success: true,
+      seminar,
+      message: "Berhasil memperbarui jadwal seminar",
+    });
+  } catch (error) {
+    console.error("Gagal memperbarui jadwal seminar: ", error);
+    res
+      .status(
+        error instanceof Error && error.message === "Seminar tidak ditemukan"
+          ? 404
+          : 500
+      )
+      .json({
+        success: false,
+        message: "Terjadi kesalahan saat memperbarui jadwal seminar",
+        error:
+          error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+      });
+  }
+};
+
 export const getProposalSeminarByStudentNIM: RequestHandler = async (
   req: AuthenticatedRequest,
   res: Response
