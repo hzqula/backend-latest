@@ -8,13 +8,15 @@ import {
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
 } from "../configs/env";
-import { logLoginAttempt, logRegistrationAttempt, logOTPAttempt } from "../middlewares/securityLogMiddleware";
+import {
+  logLoginAttempt,
+  logRegistrationAttempt,
+  logOTPAttempt,
+} from "../middlewares/securityLogMiddleware";
 import { prisma } from "../lib/prisma";
-import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../configs/env";
 import { resetPassword } from "../controllers/reset-password.controller";
-
 
 interface DecodedToken {
   userID: number;
@@ -22,7 +24,6 @@ interface DecodedToken {
   iat: number;
   exp: number;
 }
-
 
 const secretKey = JWT_SECRET || "bismillah-selesai";
 const authService = new AuthService();
@@ -63,7 +64,11 @@ export const sendOTP = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (existingUser && existingUser.isVerify && !resetPassword) {
-      res.status(400).json({ message: "Email tersebut sudah didaftarkan dan diverifikasi." });
+      res
+        .status(400)
+        .json({
+          message: "Email tersebut sudah didaftarkan dan diverifikasi.",
+        });
       return;
     }
 
@@ -110,7 +115,8 @@ export const verifyOTP = async (req: Request, res: Response) => {
 
     res.status(500).json({
       message: "Kesalahan terjadi ketika verifikasi OTP",
-      error: error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
   }
 };
@@ -174,7 +180,8 @@ export const completeRegister = async (req: Request, res: Response) => {
 
     res.status(500).json({
       message: "Kesalahan terjadi ketika melakukan pendaftaran",
-      error: error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
   }
 };
@@ -211,7 +218,8 @@ export const login = async (req: Request, res: Response) => {
 
     res.status(500).json({
       message: "Kesalahan terjadi ketika Login",
-      error: error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
   }
 };
