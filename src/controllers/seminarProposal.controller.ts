@@ -1,5 +1,18 @@
 import { Request, Response, RequestHandler } from "express";
 import { SeminarProposalService } from "../services/seminarProposal.service";
+import { sendAssessmentEmail } from "../lib/nodemailer";
+import { prisma } from "../lib/prisma";
+import {
+  logAssessProposalAttemp,
+  logRegistrationProposalAttempt,
+  logScheduleProposalAttempt,
+  logUpdateSemproAttempt,
+  logUploadDocSemproAttempt,
+  logUpdateDocSemproAttempt,
+  logUpdateAssessSemproAttempt,
+} from "../middlewares/securityLogMiddleware";
+import { EMAIL_PASSWORD } from "../configs/env";
+import { SeminarService } from "../services/seminar.service";
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -12,6 +25,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 const seminarProposalService = new SeminarProposalService();
+const seminarService = new SeminarService();
 
 export const registerProposalSeminar: RequestHandler = async (
   req: AuthenticatedRequest,
@@ -21,8 +35,13 @@ export const registerProposalSeminar: RequestHandler = async (
     const { title, advisorNIPs } = req.body;
     const studentNIM = req.user?.nim;
     console.log(req.user);
+    const email = req.user?.email;
 
     if (!studentNIM) {
+      req.body.email = email;
+      req.body.success = false;
+      req.body.reason = "NIM tidak ditemukan";
+      await logRegistrationProposalAttempt(req, res, () => {});
       res.status(403).json({
         success: false,
         message: "Forbidden: Student NIM not found",
@@ -35,6 +54,10 @@ export const registerProposalSeminar: RequestHandler = async (
       advisorNIPs,
       studentNIM
     );
+    req.body.email = email;
+    req.body.success = true;
+    logRegistrationProposalAttempt(req, res, () => {});
+    req.body.reason = "Seminar proposal registered successfully";
     res.status(201).json({
       success: true,
       seminar,
@@ -42,6 +65,10 @@ export const registerProposalSeminar: RequestHandler = async (
     });
   } catch (error) {
     console.error("Gagal mendaftarkan seminar: ", error);
+    req.body.email = req.user?.email;
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    logRegistrationProposalAttempt(req, res, () => {});
     res.status(500).json({
       success: false,
       message: "Terjadi kesalahan saat mendaftarkan seminar",
@@ -58,9 +85,14 @@ export const updateRegisterProposalSeminar: RequestHandler = async (
   try {
     const { id } = req.params;
     const { title, advisorNIPs } = req.body;
+    const email = req.user?.email;
 
     const seminarId = parseInt(id);
     if (isNaN(seminarId)) {
+      req.body.email = email;
+      req.body.success = false;
+      req.body.reason = "Invalid seminar ID";
+      await logUpdateSemproAttempt(req, res, () => {});
       res.status(400).json({
         success: false,
         message: "ID seminar tidak valid",
@@ -72,11 +104,19 @@ export const updateRegisterProposalSeminar: RequestHandler = async (
       title,
       advisorNIPs
     );
+    req.body.email = email;
+    req.body.success = true;
+    logUpdateSemproAttempt(req, res, () => {});
+    req.body.reason = "Seminar proposal updated successfully";
     res
       .status(200)
       .json({ success: true, seminar, message: "Seminar diperbarui" });
   } catch (error) {
     console.error("Error in updateRegisterProposalSeminar:", error);
+    req.body.email = req.user?.email;
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    logUpdateSemproAttempt(req, res, () => {});
     res.status(500).json({
       success: false,
       message: "Gagal memperbarui seminar",
@@ -93,8 +133,13 @@ export const uploadProposalSeminarDocument: RequestHandler = async (
   try {
     const { seminarId, documentType } = req.body;
     const file = req.file;
+    const email = req.user?.email;
 
     if (!file) {
+      req.body.email = email;
+      req.body.success = false;
+      req.body.reason = "No file uploaded";
+      await logUploadDocSemproAttempt(req, res, () => {});
       res.status(400).json({
         success: false,
         message: "Tidak ada file yang diunggah",
@@ -109,6 +154,10 @@ export const uploadProposalSeminarDocument: RequestHandler = async (
         file.buffer,
         file.mimetype
       );
+    req.body.email = email;
+    req.body.success = true;
+    req.body.reason = "Seminar document uploaded successfully";
+    logUploadDocSemproAttempt(req, res, () => {});
     res.status(201).json({
       success: true,
       seminarDocument,
@@ -116,6 +165,10 @@ export const uploadProposalSeminarDocument: RequestHandler = async (
     });
   } catch (error) {
     console.error("Gagal mengunggah dokumen seminar: ", error);
+    req.body.email = req.user?.email;
+    req.body.success = false;
+    req.body.reason = "Seminar document failed uploaded";
+    logUploadDocSemproAttempt(req, res, () => {});
     res
       .status(
         error instanceof Error && error.message === "Seminar tidak ditemukan"
@@ -138,8 +191,13 @@ export const updateSeminarProposalDocument: RequestHandler = async (
   try {
     const { seminarId, documentType } = req.body;
     const file = req.file;
+    const email = req.user?.email;
 
     if (!file) {
+      req.body.email = email;
+      req.body.success = false;
+      req.body.reason = "Tidak ada file yang diunggah";
+      await logUpdateDocSemproAttempt(req, res, () => {});
       res.status(400).json({
         success: false,
         message: "Tidak ada file yang diunggah",
@@ -154,7 +212,10 @@ export const updateSeminarProposalDocument: RequestHandler = async (
         file.buffer,
         file.mimetype
       );
-
+    req.body.email = email;
+    req.body.success = true;
+    req.body.reason = "Seminar proposal document succesfuly update";
+    logUpdateDocSemproAttempt(req, res, () => {});
     res.status(200).json({
       success: true,
       seminarDocument: updatedDocument,
@@ -162,6 +223,10 @@ export const updateSeminarProposalDocument: RequestHandler = async (
     });
   } catch (error) {
     console.error("Gagal memperbarui dokumen seminar: ", error);
+    req.body.email = req.user?.email;
+    req.body.success = false;
+    req.body.reason = "Seminar proposal document failed update";
+    logUpdateDocSemproAttempt(req, res, () => {});
     res
       .status(
         error instanceof Error && error.message === "Seminar tidak ditemukan"
@@ -183,6 +248,7 @@ export const scheduleProposalSeminar: RequestHandler = async (
 ) => {
   try {
     const { seminarId, time, room, assessorNIPs } = req.body;
+    const email = req.user?.email;
 
     const seminar = await seminarProposalService.scheduleProposalSeminar(
       parseInt(seminarId),
@@ -190,12 +256,19 @@ export const scheduleProposalSeminar: RequestHandler = async (
       room,
       assessorNIPs
     );
+    req.body.email = email;
+    req.body.success = true;
+    logScheduleProposalAttempt(req, res, () => {});
+    req.body.reason = "Seminar proposal scheduled successfully";
     res.status(200).json({
       success: true,
       seminar,
       message: "Berhasil menjadwalkan seminar",
     });
   } catch (error) {
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    logScheduleProposalAttempt(req, res, () => {});
     console.error("Gagal menjadwalkan seminar: ", error);
     res
       .status(
@@ -287,10 +360,14 @@ export const assessProposalSeminar: RequestHandler = async (
       characteristicScore,
       feedback,
     } = req.body;
-
     const lecturerNIP = req.user?.nip;
+    const email = req.user?.email;
 
     if (!lecturerNIP) {
+      req.body.email = email;
+      req.body.success = false;
+      req.body.reason = "NIP tidak ditemukan";
+      await logAssessProposalAttemp(req, res, () => {});
       res.status(403).json({
         success: false,
         message: "NIP tidak ditemukan",
@@ -308,6 +385,71 @@ export const assessProposalSeminar: RequestHandler = async (
       feedback
     );
 
+    req.body.email = email;
+    req.body.success = true;
+    req.body.reason = "Seminar proposal assessed successfully";
+    await logAssessProposalAttemp(req, res, () => {});
+
+    // Ambil lecturerName dari tabel Lecturer
+    const lecturer = await prisma.lecturer.findUnique({
+      where: { nip: lecturerNIP },
+      select: { name: true },
+    });
+
+    if (!lecturer) {
+      throw new Error("Dosen tidak ditemukan");
+    }
+
+    // Tentukan lecturerRole
+    const seminarDetailsForRole = await prisma.seminar.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        advisors: true,
+        assessors: true,
+      },
+    });
+
+    if (!seminarDetailsForRole) {
+      throw new Error("Seminar tidak ditemukan untuk penentuan peran");
+    }
+
+    const isAdvisor = seminarDetailsForRole.advisors.some(
+      (advisor) => advisor.lecturerNIP === lecturerNIP
+    );
+    const lecturerRole = isAdvisor ? "ADVISOR" : "ASSESSOR";
+
+    // Kirim email dengan riwayat penilaian ke cobaindeh@gmail.com
+    try {
+      const seminar = await seminarService.getSeminarDetail(parseInt(id));
+      const assessmentTime = new Date().toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta",
+      });
+      if (email) {
+        await sendAssessmentEmail({
+          to: "adaapasihteman@gmail.com",
+          seminarId: id,
+          title: seminar.title,
+          lecturerName: lecturer.name,
+          studentNIM: seminar.student.nim,
+          studentName: seminar.student.name,
+          assessmentTime,
+          writingScore,
+          presentationScore,
+          masteryScore,
+          characteristicScore,
+          feedback,
+          seminarType: seminar.type,
+          lecturerRole, // Tambahkan lecturerRole
+        });
+      } else {
+        console.error(
+          "Email dosen tidak tersedia untuk logging riwayat penilaian"
+        );
+      }
+    } catch (emailError) {
+      console.error("Gagal mengirim email riwayat penilaian:", emailError);
+    }
+
     res.status(200).json({
       success: true,
       seminar,
@@ -315,6 +457,10 @@ export const assessProposalSeminar: RequestHandler = async (
     });
   } catch (error) {
     console.error("Gagal menilai seminar: ", error);
+    req.body.email = req.user?.email;
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    await logAssessProposalAttemp(req, res, () => {});
     res
       .status(
         error instanceof Error && error.message === "Seminar tidak ditemukan"
@@ -343,10 +489,14 @@ export const updateAssessment: RequestHandler = async (
       characteristicScore,
       feedback,
     } = req.body;
-
     const lecturerNIP = req.user?.nip;
+    const email = req.user?.email;
 
     if (!lecturerNIP) {
+      req.body.email = email;
+      req.body.success = false;
+      req.body.reason = "NIP tidak ditemukan";
+      await logUpdateAssessSemproAttempt(req, res, () => {});
       res.status(403).json({
         success: false,
         message: "NIP tidak ditemukan",
@@ -364,6 +514,76 @@ export const updateAssessment: RequestHandler = async (
       feedback
     );
 
+    req.body.email = email;
+    req.body.success = true;
+    req.body.reason = "Seminar proposal assessment successfully updated";
+    await logUpdateAssessSemproAttempt(req, res, () => {});
+
+    //ambil lecturer name dari tabel lecturer
+    const lecturer = await prisma.lecturer.findUnique({
+      where: { nip: lecturerNIP },
+      select: { name: true },
+    });
+
+    if (!lecturer) {
+      throw new Error("Dosen tidak ditemukan");
+    }
+
+    // Tentukan lecturerRole
+    const seminarDetailsForRole = await prisma.seminar.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        advisors: true,
+        assessors: true,
+      },
+    });
+
+    if (!seminarDetailsForRole) {
+      throw new Error("Seminar tidak ditemukan untuk penentuan peran");
+    }
+
+    const isAdvisor = seminarDetailsForRole.advisors.some(
+      (advisor) => advisor.lecturerNIP === lecturerNIP
+    );
+    const lecturerRole = isAdvisor ? "ADVISOR" : "ASSESSOR";
+
+    // Kirim email dengan riwayat pembaruan penilaian ke cobaindeh@gmail.com
+    try {
+      const seminarDetails = await seminarService.getSeminarDetail(
+        parseInt(id)
+      );
+      const assessmentTime = new Date().toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta",
+      });
+      if (email) {
+        await sendAssessmentEmail({
+          to: "adaapasihteman@gmail.com",
+          seminarId: id,
+          title: seminarDetails.title,
+          lecturerRole,
+          lecturerName: lecturer.name,
+          studentNIM: seminarDetails.student.nim,
+          studentName: seminarDetails.student.name,
+          assessmentTime,
+          writingScore,
+          presentationScore,
+          masteryScore,
+          characteristicScore,
+          feedback,
+          seminarType: seminarDetails.type,
+        });
+      } else {
+        console.error(
+          "Email dosen tidak tersedia untuk logging riwayat pembaruan penilaian"
+        );
+      }
+    } catch (emailError) {
+      console.error(
+        "Gagal mengirim email riwayat pembaruan penilaian:",
+        emailError
+      );
+    }
+
     res.status(200).json({
       success: true,
       seminar,
@@ -371,6 +591,10 @@ export const updateAssessment: RequestHandler = async (
     });
   } catch (error) {
     console.error("Gagal memperbarui penilaian seminar: ", error);
+    req.body.email = req.user?.email;
+    req.body.success = false;
+    req.body.reason = error instanceof Error ? error.message : "Unknown error";
+    await logUpdateAssessSemproAttempt(req, res, () => {});
     res
       .status(
         error instanceof Error && error.message === "Seminar tidak ditemukan"

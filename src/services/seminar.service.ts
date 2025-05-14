@@ -94,7 +94,7 @@ export class SeminarService {
           select: {
             name: true,
             nim: true,
-            profilePicture: true
+            profilePicture: true,
           },
         },
         folderId: true,
@@ -122,7 +122,7 @@ export class SeminarService {
     return seminars as Seminar[];
   }
 
-  async getSeminarDetail(seminarID: number): Promise<Seminar | null> {
+  async getSeminarDetail(seminarID: number) {
     const seminar = await prisma.seminar.findUnique({
       where: { id: seminarID },
       include: {

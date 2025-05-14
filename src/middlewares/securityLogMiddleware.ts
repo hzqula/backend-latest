@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger';
@@ -235,3 +236,469 @@ export const logResetPasswordAttempt = async (req: Request, res: Response, next:
 
   next();
 };
+
+
+
+export const logRegistrationProposalAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Registrasion seminar Proposal successful" : `Registrasi seminar proposal failed: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Registrasi seminar proposal log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log registrasi seminar proposal attempt:", error);
+  }
+
+  next();
+};
+
+
+export const logRegistrationResultAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Registrasion seminar hasil successful" : `Registrasi seminar hasil failed: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Registrasi seminar hasil log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log registrasi seminar hasil attempt:", error);
+  }
+
+  next();
+};
+
+
+export const logScheduleProposalAttempt= async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "successfully schedule a proposal seminar" : `failed to schedule a proposal seminar: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Schedule seminar proposal log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log schedule seminar proposal attempt:", error);
+  }
+
+  next();
+};
+
+
+export const logScheduleResultAttempt= async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Schedule seminar hasil successful" : `Schedule seminar hasil failed: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Schedule seminar hasil log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log schedule seminar hasil attempt:", error);
+  }
+
+  next();
+};
+
+
+
+export const logAssessProposalAttemp = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "successfully assessed the proposal seminar" : `failed to assess the proposal seminar: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Assess seminar proposal log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log assess seminar proposal attempt:", error);
+  }
+
+  next();
+};
+
+
+export const logAssessResultAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Assess seminar hasil successful" : `Assess seminar hasil failed: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Assess seminar hasil log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log assess seminar proposal attempt:", error);
+  }
+
+  next();
+};
+
+
+export const logUpdateSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "successfully update proposal seminar" : `failed to update proposal seminar: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Seminar proposal update log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log assess seminar proposal attempt:", error);
+  }
+
+  next();
+};
+
+export const logUpdateSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Successfully update result seminar" : `Failed update result seminar: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Assess seminar hasil log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log assess seminar hasil attempt:", error);
+  }
+
+  next();
+};
+
+
+export const logUploadDocSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Successfully upload the result seminar document" : `failed to upload result seminar document: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Seminar result document upload log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log Seminar result document uploadattempt:", error);
+  }
+
+  next();
+};
+
+export const logUploadDocSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Successfully upload the proposal seminar document" : `failed to upload proposal seminar document: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log Seminar proposal document uploadattempt:", error);
+  }
+
+  next();
+};
+
+
+export const logUpdateDocSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "successfully update the proposal seminar document" : `failed to update proposal seminar document: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log Seminar proposal document uploadattempt:", error);
+  }
+
+  next();
+};
+
+
+export const logUpdateDocSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "successfully update the proposal seminar document" : `failed to update proposal seminar document: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log Seminar proposal document uploadattempt:", error);
+  }
+
+  next();
+};
+
+
+export const logUpdateAssessSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Successfully update proposal seminar assessment" : `Failed to update proposal seminar assessment: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Seminar proposal update assessment log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log Seminar proposal update assesment attempt:", error);
+  }
+
+  next();
+};
+
+
+export const logUpdateAssessSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success ? "Successfully update result seminar assessment" : `Failed to update result seminar assessment: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+  } catch (error) {
+    logger.error("Failed to log Seminar proposal update assesment attempt:", error);
+  }
+
+  next();
+};
+
+
+
+
