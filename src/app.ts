@@ -20,7 +20,47 @@ import invitationRouter from "./routes/invitation.route";
 
 const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://www.google.com",
+          "https://www.gstatic.com",
+        ],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'", "http://localhost:5500"],
+        frameSrc: ["'self'", "https://www.google.com"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+
+    frameguard: {
+      action: "deny",
+    },
+
+    noSniff: true,
+
+    referrerPolicy: {
+      policy: "strict-origin-when-cross-origin",
+    },
+
+    dnsPrefetchControl: {
+      allow: false,
+    },
+    permittedCrossDomainPolicies: {
+      permittedPolicies: "none",
+    },
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
