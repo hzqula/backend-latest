@@ -56,16 +56,22 @@ export const updateProfilePicture = async (req: Request, res: Response) => {
 
     let updatedProfile;
     if (user.student) {
+      console.log(
+        "Updating profile picture for student with NIM:",
+        user.student.nim
+      );
       updatedProfile = await studentService.updateProfilePicture(
         user.student.nim,
-        req.file as Express.Multer.File, // Pastikan tipe sesuai
-        userId
+        req.file as Express.Multer.File
       );
     } else if (user.lecturer) {
+      console.log(
+        "Updating profile picture for lecturer with NIP:",
+        user.lecturer.nip
+      );
       updatedProfile = await lecturerService.updateProfilePicture(
         user.lecturer.nip,
-        req.file as Express.Multer.File, // Pastikan tipe sesuai
-        userId
+        req.file as Express.Multer.File
       );
     } else {
       res.status(400).json({ error: "Role pengguna tidak ditemukan" });

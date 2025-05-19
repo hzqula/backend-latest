@@ -21,7 +21,7 @@ export class LecturerService {
 
     let profilePicture: string | undefined;
     if (data.file) {
-      const folder = `profile-pictures/${data.name}`;
+      const folder = `profile-pictures/${data.nip}`;
       const publicId = `${Date.now()}-${data.file.originalname.split(".")[0]}`;
       profilePicture = await uploadToCloudinary(
         data.file.buffer,
@@ -42,20 +42,26 @@ export class LecturerService {
 
   async updateProfilePicture(
     nip: string,
-    file: Express.Multer.File,
-    userID: number
+    file: Express.Multer.File
   ): Promise<Lecturer> {
     const lecturer = await prisma.lecturer.findUnique({ where: { nip } });
     if (!lecturer) throw new Error("Dosen tidak ditemukan");
 
     // Hapus foto lama dari Cloudinary jika ada
     if (lecturer.profilePicture) {
+      console.log("Old profile picture URL:", lecturer.profilePicture); // Debug URL sebelum penghapusan
       const publicId = getPublicIdFromUrl(lecturer.profilePicture);
-      await deleteFromCloudinary(publicId);
+      console.log("Attempting to delete publicId:", publicId); // Debug
+      try {
+        await deleteFromCloudinary(publicId);
+        console.log("Old profile picture deleted for lecturer:", nip);
+      } catch (error) {
+        console.error("Failed to delete old profile picture:", error);
+      }
     }
 
     // Unggah foto baru
-    const folder = `profile-pictures/${userID}`;
+    const folder = `profile-pictures/${nip}`;
     const publicId = `${Date.now()}-${file.originalname.split(".")[0]}`;
     const profilePicture = await uploadToCloudinary(
       file.buffer,

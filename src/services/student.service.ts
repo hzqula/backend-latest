@@ -52,16 +52,22 @@ export class StudentService {
 
   async updateProfilePicture(
     nim: string,
-    file: Express.Multer.File,
-    userID: number
+    file: Express.Multer.File
   ): Promise<Student> {
     const student = await prisma.student.findUnique({ where: { nim } });
     if (!student) throw new Error("Mahasiswa tidak ditemukan");
 
     // Hapus foto lama dari Cloudinary jika ada
     if (student.profilePicture) {
+      console.log("Old profile picture URL:", student.profilePicture); // Debug URL sebelum penghapusan
       const publicId = getPublicIdFromUrl(student.profilePicture);
-      await deleteFromCloudinary(publicId);
+      console.log("Attempting to delete publicId:", publicId); // Debug
+      try {
+        await deleteFromCloudinary(publicId);
+        console.log("Old profile picture deleted for student:", nim);
+      } catch (error) {
+        console.error("Failed to delete old profile picture:", error);
+      }
     }
 
     // Unggah foto baru
