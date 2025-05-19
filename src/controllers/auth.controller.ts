@@ -1,13 +1,6 @@
-//Auth.controller.ts
 import { Request, Response } from "express";
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
 import { AuthService } from "../services/auth.service";
-import {
-  CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET,
-  CLOUDINARY_CLOUD_NAME,
-} from "../configs/env";
 import {
   logLoginAttempt,
   logRegistrationAttempt,
@@ -28,12 +21,6 @@ interface DecodedToken {
 const secretKey = JWT_SECRET || "bismillah-selesai";
 const authService = new AuthService();
 
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-});
-
 export const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
@@ -43,7 +30,7 @@ export const upload = multer({
       return cb(new Error("Hanya file gambar (JPEG, PNG) yang diperbolehkan"));
     }
     if (file.size > maxSize) {
-      return cb(new Error("Ukuran file maksimum adalah 5MB"));
+      return cb(new Error("Ukuran file maksimum adalah 2MB"));
     }
     cb(null, true);
   },
@@ -64,11 +51,9 @@ export const sendOTP = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (existingUser && existingUser.isVerify && !resetPassword) {
-      res
-        .status(400)
-        .json({
-          message: "Email tersebut sudah didaftarkan dan diverifikasi.",
-        });
+      res.status(400).json({
+        message: "Email tersebut sudah didaftarkan dan diverifikasi.",
+      });
       return;
     }
 
@@ -130,32 +115,13 @@ export const completeRegister = async (req: Request, res: Response) => {
       return;
     }
 
-    let profilePicture: string | undefined;
-    if (req.file) {
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: "profile-pictures",
-            public_id: `${Date.now()}-${req.file!.originalname.split(".")[0]}`,
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        stream.end(req.file!.buffer);
-      });
-      profilePicture = (result as any).secure_url;
-      console.log("Profile Picture URL:", profilePicture);
-    }
-
     const { token, user } = await authService.completeRegister({
       email,
       password,
       nipOrNim,
       name,
       phoneNumber,
-      profilePicture,
+      file: req.file,
     });
 
     req.body.success = true;
@@ -231,11 +197,9 @@ export const verifyRole = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Token tidak ditemukan" });
     }
 
-    // Verifikasi token
     const decoded = jwt.verify(token, secretKey) as DecodedToken;
     const userId = decoded.userID;
 
-    // Ambil role dari database
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { role: true },

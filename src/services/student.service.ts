@@ -1,5 +1,10 @@
 import { Student } from "../../prisma/app/generated/prisma/client";
 import { prisma } from "../lib/prisma";
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  getPublicIdFromUrl,
+} from "../utils/cloudinary";
 
 export class StudentService {
   private calculateSemester(nim: string): number {
@@ -16,21 +21,85 @@ export class StudentService {
     nim: string;
     name: string;
     phoneNumber: string;
-    profilePicture?: string;
+    userID: number;
+    file?: Express.Multer.File;
   }): Promise<Student> {
     const existingStudent = await prisma.student.findUnique({
       where: { nim: data.nim },
     });
     if (existingStudent) throw new Error("NIM sudah digunakan");
 
+    let profilePicture: string | undefined;
+    if (data.file) {
+      const folder = `profile-pictures/${data.nim}`;
+      const publicId = `${Date.now()}-${data.file.originalname.split(".")[0]}`;
+      profilePicture = await uploadToCloudinary(
+        data.file.buffer,
+        folder,
+        publicId
+      );
+    }
+
     return prisma.student.create({
       data: {
         nim: data.nim,
         name: data.name,
         phoneNumber: data.phoneNumber,
-        profilePicture: data.profilePicture,
+        profilePicture,
       },
     });
+  }
+
+  async updateProfilePicture(
+    nim: string,
+    file: Express.Multer.File,
+    userID: number
+  ): Promise<Student> {
+    const student = await prisma.student.findUnique({ where: { nim } });
+    if (!student) throw new Error("Mahasiswa tidak ditemukan");
+
+    // Hapus foto lama dari Cloudinary jika ada
+    if (student.profilePicture) {
+      const publicId = getPublicIdFromUrl(student.profilePicture);
+      await deleteFromCloudinary(publicId);
+    }
+
+    // Unggah foto baru
+    const folder = `profile-pictures/${nim}`;
+    const publicId = `${Date.now()}-${file.originalname.split(".")[0]}`;
+    const profilePicture = await uploadToCloudinary(
+      file.buffer,
+      folder,
+      publicId
+    );
+
+    return prisma.student.update({
+      where: { nim },
+      data: { profilePicture },
+    });
+  }
+
+  async deleteProfilePictureAfterTwoYears(userID: number): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userID },
+      include: { student: true },
+    });
+
+    if (!user || !user.student || !user.student.profilePicture) return;
+
+    const createdAt = user.createdAt;
+    const twoYearsInMs = 2 * 365 * 24 * 60 * 60 * 1000;
+    const currentTime = new Date().getTime();
+    const timeDiff = currentTime - createdAt.getTime();
+
+    if (timeDiff > twoYearsInMs) {
+      const publicId = getPublicIdFromUrl(user.student.profilePicture);
+      await deleteFromCloudinary(publicId);
+      await prisma.student.update({
+        where: { id: user.student.id },
+        data: { profilePicture: null },
+      });
+    }
   }
 
   async getAllStudents(): Promise<(Student & { semester: number })[]> {

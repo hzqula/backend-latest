@@ -105,10 +105,9 @@ export class AuthService {
   }
 
   async completeRegister(
-    data: RegisterData
+    data: RegisterData & { file?: Express.Multer.File }
   ): Promise<{ token: string; user: any }> {
-    const { email, password, nipOrNim, name, phoneNumber, profilePicture } =
-      data;
+    const { email, password, nipOrNim, name, phoneNumber, file } = data;
 
     const tempUser = await prisma.user.findUnique({
       where: { email },
@@ -147,7 +146,8 @@ export class AuthService {
           nim: nipOrNim,
           name,
           phoneNumber,
-          profilePicture,
+          userID: tempUser.id,
+          file,
         });
         await prisma.user.update({
           where: { id: tempUser.id },
@@ -162,7 +162,8 @@ export class AuthService {
           nip: nipOrNim,
           name,
           phoneNumber,
-          profilePicture,
+          userID: tempUser.id,
+          file,
         });
         await prisma.user.update({
           where: { id: tempUser.id },
@@ -174,7 +175,10 @@ export class AuthService {
         });
       }
 
-      return { user: tempUser, profile: profileData };
+      return {
+        user: { id: tempUser.id, email: tempUser.email, role },
+        profile: profileData,
+      };
     });
 
     const token = jwt.sign(
@@ -185,11 +189,7 @@ export class AuthService {
 
     return {
       token,
-      user: {
-        id: result.user.id,
-        email: result.user.email,
-        profile: result.profile,
-      },
+      user: result.user,
     };
   }
 
