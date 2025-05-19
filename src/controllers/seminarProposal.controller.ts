@@ -10,6 +10,7 @@ import {
   logUploadDocSemproAttempt,
   logUpdateDocSemproAttempt,
   logUpdateAssessSemproAttempt,
+  logUpdateschedulesempro
 } from "../middlewares/securityLogMiddleware";
 import { EMAIL_PASSWORD } from "../configs/env";
 import { SeminarService } from "../services/seminar.service";
@@ -291,6 +292,7 @@ export const updateProposalSeminarSchedule: RequestHandler = async (
 ) => {
   try {
     const { seminarId, time, room, assessorNIPs } = req.body;
+    const email = req.user?.email;
 
     const seminar = await seminarProposalService.updateProposalSeminarSchedule(
       parseInt(seminarId),
@@ -298,6 +300,10 @@ export const updateProposalSeminarSchedule: RequestHandler = async (
       room,
       assessorNIPs
     );
+    req.body.email = email;
+    req.body.success = true;
+    req.body.reason = "Berhasil memperbarui jadwal seminar proposal";
+    logUpdateschedulesempro(req, res, () => {})
     res.status(200).json({
       success: true,
       seminar,
@@ -305,6 +311,10 @@ export const updateProposalSeminarSchedule: RequestHandler = async (
     });
   } catch (error) {
     console.error("Gagal memperbarui jadwal seminar: ", error);
+    req.body.email = req.body?.email;
+    req.body.succes = false;
+    req.body.reason = error instanceof Error ? error.message : "Uknown error";
+    logUpdateschedulesempro (req, res, () => {});
     res
       .status(
         error instanceof Error && error.message === "Seminar tidak ditemukan"
@@ -426,7 +436,7 @@ export const assessProposalSeminar: RequestHandler = async (
       });
       if (email) {
         await sendAssessmentEmail({
-          to: "adaapasihteman@gmail.com",
+          to: "farraslathief@gmail.com",
           seminarId: id,
           title: seminar.title,
           lecturerName: lecturer.name,
@@ -557,7 +567,7 @@ export const updateAssessment: RequestHandler = async (
       });
       if (email) {
         await sendAssessmentEmail({
-          to: "adaapasihteman@gmail.com",
+          to: "farraslathief@gmail.com",
           seminarId: id,
           title: seminarDetails.title,
           lecturerRole,
