@@ -17,6 +17,7 @@ import { cleanupOldLogs } from "./services/security-log.service";
 import SecurityLogRoute from "./routes/security-log.route";
 import { authenticateJWT, restrictTo } from "./middlewares/auth";
 import invitationRouter from "./routes/invitation.route";
+import announcementRouter from "./routes/announcement.route";
 
 const app = express();
 
@@ -86,6 +87,7 @@ app.use("/api/reset-password", resetPassword);
 app.use("/api/seminars", seminarRouter);
 app.use("/api/seminars", seminarProposalRouter);
 app.use("/api/seminars", seminarResultRouter);
+app.use("/api/announcements", announcementRouter);
 app.use(
   "/api/security-logs",
   authenticateJWT,
