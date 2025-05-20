@@ -11,6 +11,15 @@ cloudinary.config({
   api_secret: CLOUDINARY_API_SECRET,
 });
 
+interface CloudinaryError {
+  message: string;
+  http_code: number;
+}
+
+interface CloudinaryDeleteResult {
+  deleted: string[];
+}
+
 // Fungsi untuk mengunggah gambar ke Cloudinary
 export const uploadToCloudinary = (
   fileBuffer: Buffer,
@@ -44,7 +53,31 @@ export const deleteFromCloudinary = (publicId: string): Promise<void> => {
           reject(error);
         } else {
           console.log("Successfully deleted from Cloudinary:", publicId);
-          console.log("Cloudinary delete result:", result); // Tambahkan log untuk melihat detail hasil
+          console.log("Cloudinary delete result:", result);
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+// Fungsi untuk menghapus folder beserta isinya dari Cloudinary
+export const deleteFolderFromCloudinary = (folder: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    cloudinary.api.delete_folder(
+      folder,
+      (error: CloudinaryError, result: CloudinaryDeleteResult) => {
+        if (error) {
+          console.error(
+            `Error deleting folder ${folder} from Cloudinary:`,
+            error
+          );
+          reject(error);
+        } else {
+          console.log(
+            `Successfully deleted folder ${folder} from Cloudinary:`,
+            result
+          );
           resolve();
         }
       }
@@ -55,12 +88,10 @@ export const deleteFromCloudinary = (publicId: string): Promise<void> => {
 // Fungsi untuk mendapatkan public_id dari URL Cloudinary
 export const getPublicIdFromUrl = (url: string): string => {
   const parts = url.split("/");
-  const fileName = parts[parts.length - 1]; // Misalnya: "1747652184861-bg.png"
-  const folderPath = parts
-    .slice(parts.indexOf("profile-pictures"), -1)
-    .join("/"); // Misalnya: "profile-pictures/12250111603"
-  const publicId = fileName.split(".")[0]; // Misalnya: "1747652184861-bg"
-  const fullPublicId = `${folderPath}/${publicId}`; // Harusnya: "profile-pictures/12250111603/1747652184861-bg"
+  const fileName = parts[parts.length - 1]; // Misalnya: "1747652184861-gambar.png"
+  const folderPath = parts.slice(parts.indexOf("pengumuman"), -1).join("/"); // Misalnya: "pengumuman/1"
+  const publicId = fileName.split(".")[0]; // Misalnya: "1747652184861-gambar"
+  const fullPublicId = `${folderPath}/${publicId}`; // Contoh: "pengumuman/1/1747652184861-gambar"
   console.log("Extracted fullPublicId:", fullPublicId); // Debug
   return fullPublicId;
 };
