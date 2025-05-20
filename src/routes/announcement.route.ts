@@ -5,6 +5,8 @@ import {
   deleteAnnouncement,
   getAllAnnouncements,
   getAnnouncementById,
+  getPublicAnnouncements,
+  getAnnouncementsForRole,
 } from "../controllers/announcement.controller";
 import multer from "multer";
 import { authenticateJWT, restrictTo } from "../middlewares/auth";
@@ -29,6 +31,7 @@ router.post(
   upload.single("image"),
   createAnnouncement
 );
+
 router.put(
   "/:id",
   authenticateJWT,
@@ -36,18 +39,30 @@ router.put(
   upload.single("image"),
   updateAnnouncement
 );
+
 router.delete(
   "/:id",
   authenticateJWT,
   restrictTo("COORDINATOR"),
   deleteAnnouncement
 );
+
 router.get(
   "/",
   authenticateJWT,
   restrictTo("COORDINATOR"),
   getAllAnnouncements
 );
+
+router.get("/public", getPublicAnnouncements);
+
+router.get(
+  "/role",
+  authenticateJWT,
+  restrictTo("STUDENT", "LECTURER"),
+  getAnnouncementsForRole
+);
+
 router.get(
   "/:id",
   authenticateJWT,

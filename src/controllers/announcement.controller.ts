@@ -22,7 +22,7 @@ export const createAnnouncement: RequestHandler = async (
 ) => {
   try {
     const { title, content } = req.body;
-    let visibility = req.body.visibility; // Diterima sebagai string JSON dari FormData
+    let visibility = req.body.visibility;
     const file = req.file;
     const coordinatorId = req.user?.userID;
     const email = req.user?.email;
@@ -39,7 +39,6 @@ export const createAnnouncement: RequestHandler = async (
       return;
     }
 
-    // Parse visibility jika diterima sebagai string
     if (typeof visibility === "string") {
       try {
         visibility = JSON.parse(visibility);
@@ -52,11 +51,9 @@ export const createAnnouncement: RequestHandler = async (
           success: false,
           message: "Format visibilitas tidak valid",
         });
-        return;
       }
     }
 
-    // Validasi bahwa visibility adalah array
     if (!Array.isArray(visibility)) {
       req.body.email = email;
       req.body.success = false;
@@ -97,7 +94,6 @@ export const createAnnouncement: RequestHandler = async (
       error:
         error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
-    return;
   }
 };
 
@@ -108,7 +104,7 @@ export const updateAnnouncement: RequestHandler = async (
   try {
     const { id } = req.params;
     const { title, content } = req.body;
-    let visibility = req.body.visibility; // Diterima sebagai string JSON dari FormData
+    let visibility = req.body.visibility;
     const file = req.file;
     const coordinatorId = req.user?.userID;
     const email = req.user?.email;
@@ -123,7 +119,6 @@ export const updateAnnouncement: RequestHandler = async (
         success: false,
         message: "ID pengumuman tidak valid",
       });
-      return;
     }
 
     if (!coordinatorId) {
@@ -138,7 +133,6 @@ export const updateAnnouncement: RequestHandler = async (
       return;
     }
 
-    // Parse visibility jika diterima sebagai string
     if (typeof visibility === "string") {
       try {
         visibility = JSON.parse(visibility);
@@ -151,11 +145,9 @@ export const updateAnnouncement: RequestHandler = async (
           success: false,
           message: "Format visibilitas tidak valid",
         });
-        return;
       }
     }
 
-    // Validasi bahwa visibility adalah array
     if (!Array.isArray(visibility)) {
       req.body.email = email;
       req.body.success = false;
@@ -165,7 +157,6 @@ export const updateAnnouncement: RequestHandler = async (
         success: false,
         message: "Visibilitas harus berupa array",
       });
-      return;
     }
 
     const announcement = await announcementService.updateAnnouncement(
@@ -187,7 +178,6 @@ export const updateAnnouncement: RequestHandler = async (
       announcement,
       message: "Berhasil memperbarui pengumuman",
     });
-    return;
   } catch (error) {
     req.body.email = req.user?.email;
     req.body.success = false;
@@ -199,7 +189,6 @@ export const updateAnnouncement: RequestHandler = async (
       error:
         error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
-    return;
   }
 };
 
@@ -222,7 +211,6 @@ export const deleteAnnouncement: RequestHandler = async (
         success: false,
         message: "ID pengumuman tidak valid",
       });
-      return;
     }
 
     if (!coordinatorId) {
@@ -248,7 +236,6 @@ export const deleteAnnouncement: RequestHandler = async (
       success: true,
       message: "Berhasil menghapus pengumuman",
     });
-    return;
   } catch (error) {
     req.body.email = req.user?.email;
     req.body.success = false;
@@ -260,7 +247,6 @@ export const deleteAnnouncement: RequestHandler = async (
       error:
         error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
-    return;
   }
 };
 
@@ -293,7 +279,6 @@ export const getAllAnnouncements: RequestHandler = async (
       announcements,
       message: "Berhasil mendapatkan daftar pengumuman",
     });
-    return;
   } catch (error) {
     req.body.email = req.user?.email;
     req.body.success = false;
@@ -305,7 +290,61 @@ export const getAllAnnouncements: RequestHandler = async (
       error:
         error instanceof Error ? error.message : "Kesalahan tidak diketahui",
     });
-    return;
+  }
+};
+
+export const getPublicAnnouncements: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const announcements = await announcementService.getPublicAnnouncements();
+    res.status(200).json({
+      success: true,
+      announcements,
+      message: "Berhasil mendapatkan daftar pengumuman publik",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat mendapatkan daftar pengumuman publik",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+    });
+  }
+};
+
+export const getAnnouncementsForRole: RequestHandler = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const role = req.user?.role;
+    if (!role || !["STUDENT", "LECTURER"].includes(role)) {
+      res.status(403).json({
+        success: false,
+        message: "Role tidak valid untuk mengakses pengumuman",
+      });
+      return;
+    }
+
+    const announcements =
+      await announcementService.getAnnouncementsByVisibility(
+        role as "STUDENT" | "LECTURER"
+      );
+
+    res.status(200).json({
+      success: true,
+      announcements,
+      message: `Berhasil mendapatkan daftar pengumuman untuk ${role}`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat mendapatkan daftar pengumuman",
+      error:
+        error instanceof Error ? error.message : "Kesalahan tidak diketahui",
+    });
   }
 };
 
@@ -333,7 +372,6 @@ export const getAnnouncementById: RequestHandler = async (
       announcement,
       message: "Berhasil mendapatkan data pengumuman",
     });
-    return;
   } catch (error) {
     res
       .status(

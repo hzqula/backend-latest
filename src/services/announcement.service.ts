@@ -1,13 +1,13 @@
-import {
-  Announcement,
-  Visibility,
-} from "../../prisma/app/generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
   deleteFolderFromCloudinary,
 } from "../utils/cloudinary";
+import {
+  Announcement,
+  Visibility,
+} from "../../prisma/app/generated/prisma/client";
 
 export class AnnouncementService {
   async createAnnouncement(
@@ -52,15 +52,23 @@ export class AnnouncementService {
         coordinatorId,
         image,
       },
+      include: {
+        coordinator: {
+          select: {
+            name: true,
+            profilePicture: true,
+          },
+        },
+      },
     });
 
     // Jika ada gambar, pindahkan ke folder dengan ID pengumuman
-    if (image) {
+    if (image && file) {
       const publicId = `pengumuman/${announcement.id}/${Date.now()}-${
-        file!.originalname.split(".")[0]
+        file.originalname.split(".")[0]
       }`;
       const newImageUrl = await uploadToCloudinary(
-        file!.buffer,
+        file.buffer,
         `pengumuman/${announcement.id}`,
         publicId
       );
@@ -137,6 +145,14 @@ export class AnnouncementService {
         visibility,
         image,
       },
+      include: {
+        coordinator: {
+          select: {
+            name: true,
+            profilePicture: true,
+          },
+        },
+      },
     });
   }
 
@@ -170,12 +186,72 @@ export class AnnouncementService {
     return prisma.announcement.findMany({
       where: { coordinatorId },
       orderBy: { createdAt: "desc" },
+      include: {
+        coordinator: {
+          select: {
+            name: true,
+            profilePicture: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getPublicAnnouncements(): Promise<Announcement[]> {
+    return prisma.announcement.findMany({
+      where: {
+        visibility: {
+          has: "PUBLIC",
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        coordinator: {
+          select: {
+            name: true,
+            profilePicture: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getAnnouncementsByVisibility(
+    visibility: Visibility
+  ): Promise<Announcement[]> {
+    return prisma.announcement.findMany({
+      where: {
+        visibility: {
+          has: visibility,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        coordinator: {
+          select: {
+            name: true,
+            profilePicture: true,
+          },
+        },
+      },
     });
   }
 
   async getAnnouncementById(id: number): Promise<Announcement> {
     const announcement = await prisma.announcement.findUnique({
       where: { id },
+      include: {
+        coordinator: {
+          select: {
+            name: true,
+            profilePicture: true,
+          },
+        },
+      },
     });
     if (!announcement) {
       throw new Error("Pengumuman tidak ditemukan");
