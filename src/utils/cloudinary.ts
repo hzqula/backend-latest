@@ -41,7 +41,7 @@ export const uploadToCloudinary = (
   });
 };
 
-// Fungsi untuk menghapus gambar dari Cloudinary
+// Fungsi untuk menghapus satu gambar dari Cloudinary
 export const deleteFromCloudinary = (publicId: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(
@@ -61,21 +61,22 @@ export const deleteFromCloudinary = (publicId: string): Promise<void> => {
   });
 };
 
-// Fungsi untuk menghapus folder beserta isinya dari Cloudinary
-export const deleteFolderFromCloudinary = (folder: string): Promise<void> => {
+// Fungsi untuk menghapus semua file di dalam folder
+export const deleteAllFilesInFolder = (folder: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    cloudinary.api.delete_folder(
+    cloudinary.api.delete_resources_by_prefix(
       folder,
-      (error: CloudinaryError, result: CloudinaryDeleteResult) => {
+      { resource_type: "image" },
+      (error, result) => {
         if (error) {
           console.error(
-            `Error deleting folder ${folder} from Cloudinary:`,
+            `Error deleting files in folder ${folder} from Cloudinary:`,
             error
           );
           reject(error);
         } else {
           console.log(
-            `Successfully deleted folder ${folder} from Cloudinary:`,
+            `Successfully deleted files in folder ${folder} from Cloudinary:`,
             result
           );
           resolve();
@@ -83,6 +84,39 @@ export const deleteFolderFromCloudinary = (folder: string): Promise<void> => {
       }
     );
   });
+};
+
+// Fungsi untuk menghapus folder beserta isinya dari Cloudinary
+export const deleteFolderFromCloudinary = async (
+  folder: string
+): Promise<void> => {
+  try {
+    // Hapus semua file di dalam folder terlebih dahulu
+    await deleteAllFilesInFolder(folder);
+    // Kemudian hapus folder
+    await new Promise<void>((resolve, reject) => {
+      cloudinary.api.delete_folder(
+        folder,
+        (error: CloudinaryError, result: CloudinaryDeleteResult) => {
+          if (error) {
+            console.error(
+              `Error deleting folder ${folder} from Cloudinary:`,
+              error
+            );
+            reject(error);
+          } else {
+            console.log(
+              `Successfully deleted folder ${folder} from Cloudinary:`,
+              result
+            );
+            resolve();
+          }
+        }
+      );
+    });
+  } catch (error) {
+    throw error;
+  }
 };
 
 // Fungsi untuk mendapatkan public_id dari URL Cloudinary

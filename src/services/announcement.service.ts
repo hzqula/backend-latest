@@ -3,6 +3,7 @@ import {
   uploadToCloudinary,
   deleteFromCloudinary,
   deleteFolderFromCloudinary,
+  getPublicIdFromUrl,
 } from "../utils/cloudinary";
 import {
   Announcement,
@@ -123,11 +124,7 @@ export class AnnouncementService {
     if (file) {
       // Hapus gambar lama jika ada
       if (announcement.image) {
-        const publicId = announcement.image
-          .split("/")
-          .slice(-3)
-          .join("/")
-          .split(".")[0];
+        const publicId = getPublicIdFromUrl(announcement.image);
         await deleteFromCloudinary(publicId);
       }
 
@@ -170,7 +167,7 @@ export class AnnouncementService {
       throw new Error("Anda tidak berwenang untuk menghapus pengumuman ini");
     }
 
-    // Hapus folder Cloudinary jika ada gambar
+    // Hapus folder Cloudinary beserta isinya jika ada gambar
     if (announcement.image) {
       const folder = `pengumuman/${id}`;
       await deleteFolderFromCloudinary(folder);
