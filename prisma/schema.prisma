@@ -62,10 +62,11 @@ model Lecturer {
 }
 
 model Coordinator {
-  id             Int     @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   name           String
-  profilePicture String? @map("profile_picture")
+  profilePicture String?        @map("profile_picture")
   user           User?
+  announcements  Announcement[] @relation("CoordinatorAnnouncements") // Tambahkan relasi balik
 }
 
 model Seminar {
@@ -118,10 +119,10 @@ model Assessment {
   id           Int          @id @default(autoincrement())
   lecturerRole LecturerRole @map("lecturer_role")
 
-  presentationScore   Float?   @map("presentation_score") // Penyajian Makalah
-  masteryScore        Float?   @map("mastery_score") // Penguasaan Materi
-  characteristicScore Float?   @map("characteristic_score") // Karakteristik (Pembimbing)
-  writingScore        Float?   @map("writing_score") // Penulisan Makalah`
+  presentationScore   Float?   @map("presentation_score")
+  masteryScore        Float?   @map("mastery_score")
+  characteristicScore Float?   @map("characteristic_score")
+  writingScore        Float?   @map("writing_score")
   finalScore          Float?   @map("final_score")
   feedback            String?
   createdAt           DateTime @default(now())
@@ -132,6 +133,25 @@ model Assessment {
   seminar     Seminar   @relation(fields: [seminarID], references: [id], onDelete: Cascade)
 
   @@unique([seminarID, lecturerNIP])
+}
+
+model Announcement {
+  id            Int         @id @default(autoincrement())
+  title         String
+  content       String // Caption dari pengumuman
+  image         String? // URL gambar dari Cloudinary
+  visibility    Visibility // Enum untuk visibilitas
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now())
+  coordinator   Coordinator @relation("CoordinatorAnnouncements", fields: [coordinatorId], references: [id], onDelete: Cascade)
+  coordinatorId Int
+}
+
+// Tambahkan enum untuk visibilitas
+enum Visibility {
+  LECTURER
+  STUDENT
+  PUBLIC
 }
 
 enum UserRole {
@@ -151,12 +171,12 @@ enum DocumentType {
   ADVISOR_ASSISTANCE
   SEMINAR_ATTENDANCE
   THESIS_PROPOSAL
-  FREE_THEORY_CERTIFICATE // Surat Bebas Teori
-  ADVISOR_APPROVAL // Persetujuan Seminar Hasil oleh Dosen Pembimbing 1 dan 2
-  EXAMINER_APPROVAL // Lembar Persetujuan Dosen Penguji
-  TRANSCRIPT // Transkip Nilai
-  ASSISTANCE_SHEET // Lembar Asistensi
-  FINAL_THESIS // Dokumen Tugas Akhir 4 Rangkap
+  FREE_THEORY_CERTIFICATE
+  ADVISOR_APPROVAL
+  EXAMINER_APPROVAL
+  TRANSCRIPT
+  ASSISTANCE_SHEET
+  FINAL_THESIS
 }
 
 enum SeminarStatus {
