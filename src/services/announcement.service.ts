@@ -1,127 +1,185 @@
-import { Announcement, Prisma } from "../../prisma/app/generated/prisma/client";
+import {
+  Announcement,
+  Visibility,
+} from "../../prisma/app/generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
-  getPublicIdFromUrl,
+  deleteFolderFromCloudinary,
 } from "../utils/cloudinary";
 
 export class AnnouncementService {
-  // Membuat pengumuman baru
   async createAnnouncement(
-    data: {
-      title: string;
-      content: string;
-      visibility: "LECTURER" | "STUDENT" | "PUBLIC"; // Tipe sesuai dengan enum Visibility
-      coordinatorId: number;
-    },
+    title: string,
+    content: string,
+    visibility: Visibility[],
+    coordinatorId: number,
     file?: Express.Multer.File
   ): Promise<Announcement> {
+    // Validasi visibilitas
+    const validVisibilities: Visibility[] = ["LECTURER", "STUDENT", "PUBLIC"];
+    const invalidVisibilities = visibility.filter(
+      (v) => !validVisibilities.includes(v)
+    );
+    if (invalidVisibilities.length > 0) {
+      throw new Error(
+        `Visibilitas tidak valid: ${invalidVisibilities.join(", ")}`
+      );
+    }
+
+    // Validasi koordinator
+    const coordinator = await prisma.coordinator.findUnique({
+      where: { id: coordinatorId },
+    });
+    if (!coordinator) {
+      throw new Error("Koordinator tidak ditemukan");
+    }
+
     let image: string | undefined;
-
-    // Jika ada file gambar, unggah ke Cloudinary
     if (file) {
-      // Simpan sementara pengumuman untuk mendapatkan ID
-      const tempAnnouncement = await prisma.announcement.create({
-        data: {
-          title: data.title,
-          content: data.content,
-          visibility: data.visibility, // Hapus casting ke Prisma.EnumVisibilityFilter
-          coordinatorId: data.coordinatorId,
-        },
-      });
-
-      const folder = `pengumuman/${tempAnnouncement.id}`;
-      const publicId = `${Date.now()}-pengumuman`;
+      const folder = `pengumuman/temp`; // Folder sementara, akan diupdate setelah ID diketahui
+      const publicId = `${Date.now()}-${file.originalname.split(".")[0]}`;
       image = await uploadToCloudinary(file.buffer, folder, publicId);
-
-      // Perbarui pengumuman dengan URL gambar
-      return prisma.announcement.update({
-        where: { id: tempAnnouncement.id },
-        data: { image },
-      });
     }
 
-    // Jika tidak ada gambar, buat pengumuman tanpa gambar
-    return prisma.announcement.create({
+    // Buat pengumuman
+    const announcement = await prisma.announcement.create({
       data: {
-        title: data.title,
-        content: data.content,
-        visibility: data.visibility, // Hapus casting ke Prisma.EnumVisibilityFilter
-        coordinatorId: data.coordinatorId,
+        title,
+        content,
+        visibility,
+        coordinatorId,
+        image,
       },
     });
-  }
 
-  // Mengambil pengumuman berdasarkan visibilitas dan role pengguna
-  async getAnnouncements(
-    role?: "STUDENT" | "LECTURER" | "COORDINATOR",
-    forPublic: boolean = false
-  ): Promise<Announcement[]> {
-    if (forPublic) {
-      // Jika untuk landing page, hanya ambil pengumuman dengan visibilitas PUBLIC
-      return prisma.announcement.findMany({
-        where: {
-          visibility: "PUBLIC",
-        },
-        include: {
-          coordinator: {
-            select: { name: true, profilePicture: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
+    // Jika ada gambar, pindahkan ke folder dengan ID pengumuman
+    if (image) {
+      const publicId = `pengumuman/${announcement.id}/${Date.now()}-${
+        file!.originalname.split(".")[0]
+      }`;
+      const newImageUrl = await uploadToCloudinary(
+        file!.buffer,
+        `pengumuman/${announcement.id}`,
+        publicId
+      );
+      await deleteFromCloudinary(
+        `pengumuman/temp/${publicId.split("/").pop()}`
+      );
+
+      // Update URL gambar
+      await prisma.announcement.update({
+        where: { id: announcement.id },
+        data: { image: newImageUrl },
       });
+      announcement.image = newImageUrl;
     }
 
-    if (!role) {
-      throw new Error("Role pengguna harus disediakan untuk dashboard");
-    }
-
-    // Untuk dashboard, ambil pengumuman berdasarkan role
-    const visibilityFilter =
-      role === "STUDENT" ? "STUDENT" : role === "LECTURER" ? "LECTURER" : null;
-
-    if (!visibilityFilter) {
-      return []; // Coordinator tidak perlu melihat pengumuman di dashboard mereka
-    }
-
-    return prisma.announcement.findMany({
-      where: {
-        visibility: visibilityFilter,
-      },
-      include: {
-        coordinator: {
-          select: { name: true, profilePicture: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    return announcement;
   }
 
-  // Menghapus pengumuman
-  async deleteAnnouncement(announcementId: number): Promise<void> {
-    const announcement = await prisma.announcement.findUnique({
-      where: { id: announcementId },
-    });
+  async updateAnnouncement(
+    id: number,
+    title: string,
+    content: string,
+    visibility: Visibility[],
+    coordinatorId: number,
+    file?: Express.Multer.File
+  ): Promise<Announcement> {
+    // Validasi visibilitas
+    const validVisibilities: Visibility[] = ["LECTURER", "STUDENT", "PUBLIC"];
+    const invalidVisibilities = visibility.filter(
+      (v) => !validVisibilities.includes(v)
+    );
+    if (invalidVisibilities.length > 0) {
+      throw new Error(
+        `Visibilitas tidak valid: ${invalidVisibilities.join(", ")}`
+      );
+    }
 
+    // Validasi pengumuman
+    const announcement = await prisma.announcement.findUnique({
+      where: { id },
+    });
     if (!announcement) {
       throw new Error("Pengumuman tidak ditemukan");
     }
 
-    // Hapus gambar dari Cloudinary jika ada
-    if (announcement.image) {
-      const publicId = getPublicIdFromUrl(announcement.image);
-      try {
+    // Validasi koordinator
+    if (announcement.coordinatorId !== coordinatorId) {
+      throw new Error("Anda tidak berwenang untuk mengedit pengumuman ini");
+    }
+
+    let image = announcement.image;
+    if (file) {
+      // Hapus gambar lama jika ada
+      if (announcement.image) {
+        const publicId = announcement.image
+          .split("/")
+          .slice(-3)
+          .join("/")
+          .split(".")[0];
         await deleteFromCloudinary(publicId);
-        console.log("Image deleted from Cloudinary:", publicId);
-      } catch (error) {
-        console.error("Failed to delete image from Cloudinary:", error);
       }
+
+      // Unggah gambar baru
+      const folder = `pengumuman/${id}`;
+      const publicId = `${Date.now()}-${file.originalname.split(".")[0]}`;
+      image = await uploadToCloudinary(file.buffer, folder, publicId);
+    }
+
+    return prisma.announcement.update({
+      where: { id },
+      data: {
+        title,
+        content,
+        visibility,
+        image,
+      },
+    });
+  }
+
+  async deleteAnnouncement(id: number, coordinatorId: number): Promise<void> {
+    // Validasi pengumuman
+    const announcement = await prisma.announcement.findUnique({
+      where: { id },
+    });
+    if (!announcement) {
+      throw new Error("Pengumuman tidak ditemukan");
+    }
+
+    // Validasi koordinator
+    if (announcement.coordinatorId !== coordinatorId) {
+      throw new Error("Anda tidak berwenang untuk menghapus pengumuman ini");
+    }
+
+    // Hapus folder Cloudinary jika ada gambar
+    if (announcement.image) {
+      const folder = `pengumuman/${id}`;
+      await deleteFolderFromCloudinary(folder);
     }
 
     // Hapus pengumuman dari database
     await prisma.announcement.delete({
-      where: { id: announcementId },
+      where: { id },
     });
+  }
+
+  async getAllAnnouncements(coordinatorId: number): Promise<Announcement[]> {
+    return prisma.announcement.findMany({
+      where: { coordinatorId },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async getAnnouncementById(id: number): Promise<Announcement> {
+    const announcement = await prisma.announcement.findUnique({
+      where: { id },
+    });
+    if (!announcement) {
+      throw new Error("Pengumuman tidak ditemukan");
+    }
+    return announcement;
   }
 }
