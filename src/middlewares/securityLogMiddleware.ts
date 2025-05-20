@@ -1,12 +1,10 @@
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../lib/prisma";
+import logger from "../utils/logger";
+import { getClientIp, getClientDevice } from "../utils/ipUtils";
 
-import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
-import logger from '../utils/logger';
-import { getClientIp, getClientDevice } from '../utils/ipUtils';
-
-const prisma = new PrismaClient();
-
-const loginAttempts: Record<string, { count: number; firstAttempt: number }> = {};
+const loginAttempts: Record<string, { count: number; firstAttempt: number }> =
+  {};
 
 const containsSqlInjection = (input: string): boolean => {
   const sqlPatterns = [
@@ -15,12 +13,16 @@ const containsSqlInjection = (input: string): boolean => {
     /\w*((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))/i,
     /((\%27)|(\'))union/i,
     /exec(\s|\+)+(s|x)p\w+/i,
-    /insert|update|delete|drop|alter|truncate/i
+    /insert|update|delete|drop|alter|truncate/i,
   ];
-  return sqlPatterns.some(pattern => pattern.test(input));
+  return sqlPatterns.some((pattern) => pattern.test(input));
 };
 
-export const logAllRequests = async (req: Request, res: Response, next: NextFunction) => {
+export const logAllRequests = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const originalUrl = req.originalUrl;
@@ -30,18 +32,22 @@ export const logAllRequests = async (req: Request, res: Response, next: NextFunc
   let isThreat = false;
 
   for (const key in req.query) {
-    if (typeof req.query[key] === 'string' && containsSqlInjection(req.query[key] as string)) {
+    if (
+      typeof req.query[key] === "string" &&
+      containsSqlInjection(req.query[key] as string)
+    ) {
       action = `POTENTIAL SQL INJECTION: ${method} ${originalUrl}`;
       isThreat = true;
       break;
     }
   }
 
-  if (!isThreat && req.body && typeof req.body === 'object') {
+  if (!isThreat && req.body && typeof req.body === "object") {
     const checkObject = (obj: any): boolean => {
       for (const key in obj) {
-        if (typeof obj[key] === 'string' && containsSqlInjection(obj[key])) return true;
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
+        if (typeof obj[key] === "string" && containsSqlInjection(obj[key]))
+          return true;
+        if (typeof obj[key] === "object" && obj[key] !== null) {
           if (checkObject(obj[key])) return true;
         }
       }
@@ -55,7 +61,9 @@ export const logAllRequests = async (req: Request, res: Response, next: NextFunc
 
   if (isThreat) {
     try {
-      logger.warn(`Security threat detected: ${action} from IP: ${ip}, Device: ${device}`);
+      logger.warn(
+        `Security threat detected: ${action} from IP: ${ip}, Device: ${device}`
+      );
       await prisma.securityLog.create({
         data: {
           userId: -1,
@@ -66,14 +74,18 @@ export const logAllRequests = async (req: Request, res: Response, next: NextFunc
         },
       });
     } catch (error) {
-      logger.error('Failed to log security threat:', error);
+      logger.error("Failed to log security threat:", error);
     }
   }
 
   next();
 };
 
-export const logLoginAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logLoginAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -85,7 +97,9 @@ export const logLoginAttempt = async (req: Request, res: Response, next: NextFun
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Login successful" : `Login failed: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Login successful"
+      : `Login failed: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -105,7 +119,11 @@ export const logLoginAttempt = async (req: Request, res: Response, next: NextFun
   next();
 };
 
-export const logRegistrationAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logRegistrationAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -117,7 +135,9 @@ export const logRegistrationAttempt = async (req: Request, res: Response, next: 
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Registration successful" : `Registration failed: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Registration successful"
+      : `Registration failed: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -137,7 +157,11 @@ export const logRegistrationAttempt = async (req: Request, res: Response, next: 
   next();
 };
 
-export const logOTPAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logOTPAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -149,7 +173,9 @@ export const logOTPAttempt = async (req: Request, res: Response, next: NextFunct
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "OTP valid" : `OTP invalid: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "OTP valid"
+      : `OTP invalid: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -169,33 +195,40 @@ export const logOTPAttempt = async (req: Request, res: Response, next: NextFunct
   next();
 };
 
-export const detectBruteForce = async (req: Request, res: Response, next: NextFunction) => {
+export const detectBruteForce = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const now = Date.now();
-  
+
   if (!loginAttempts[ip]) {
     loginAttempts[ip] = { count: 1, firstAttempt: now };
   } else {
     loginAttempts[ip].count += 1;
   }
 
-  if (loginAttempts[ip].count > 5 && now - loginAttempts[ip].firstAttempt < 60 * 1000) {
+  if (
+    loginAttempts[ip].count > 5 &&
+    now - loginAttempts[ip].firstAttempt < 60 * 1000
+  ) {
     logger.warn(`Brute force attack detected from IP: ${ip}`);
-    
+
     try {
       await prisma.securityLog.create({
         data: {
           userId: -1,
-          action: 'Brute force login detected',
+          action: "Brute force login detected",
           ipAddress: ip,
           device: getClientDevice(req),
           createdAt: new Date(),
         },
       });
     } catch (error) {
-      logger.error('Failed to log brute force attempt:', error);
+      logger.error("Failed to log brute force attempt:", error);
     }
-    
+
     loginAttempts[ip].count = 0;
     loginAttempts[ip].firstAttempt = now;
   }
@@ -203,9 +236,11 @@ export const detectBruteForce = async (req: Request, res: Response, next: NextFu
   next();
 };
 
-
-
-export const logResetPasswordAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logResetPasswordAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -217,7 +252,9 @@ export const logResetPasswordAttempt = async (req: Request, res: Response, next:
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Reset password successful" : `Reset password failed: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Reset password successful"
+      : `Reset password failed: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -237,9 +274,11 @@ export const logResetPasswordAttempt = async (req: Request, res: Response, next:
   next();
 };
 
-
-
-export const logRegistrationProposalAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logRegistrationProposalAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -251,7 +290,9 @@ export const logRegistrationProposalAttempt = async (req: Request, res: Response
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Registrasion seminar Proposal successful" : `Registrasi seminar proposal failed: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Registrasion seminar Proposal successful"
+      : `Registrasi seminar proposal failed: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -263,7 +304,9 @@ export const logRegistrationProposalAttempt = async (req: Request, res: Response
       },
     });
 
-    logger.info(`Registrasi seminar proposal log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Registrasi seminar proposal log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log registrasi seminar proposal attempt:", error);
   }
@@ -271,8 +314,11 @@ export const logRegistrationProposalAttempt = async (req: Request, res: Response
   next();
 };
 
-
-export const logRegistrationResultAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logRegistrationResultAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -284,7 +330,9 @@ export const logRegistrationResultAttempt = async (req: Request, res: Response, 
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Registrasion seminar hasil successful" : `Registrasi seminar hasil failed: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Registrasion seminar hasil successful"
+      : `Registrasi seminar hasil failed: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -296,7 +344,9 @@ export const logRegistrationResultAttempt = async (req: Request, res: Response, 
       },
     });
 
-    logger.info(`Registrasi seminar hasil log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Registrasi seminar hasil log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log registrasi seminar hasil attempt:", error);
   }
@@ -304,8 +354,11 @@ export const logRegistrationResultAttempt = async (req: Request, res: Response, 
   next();
 };
 
-
-export const logScheduleProposalAttempt= async (req: Request, res: Response, next: NextFunction) => {
+export const logScheduleProposalAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -317,7 +370,9 @@ export const logScheduleProposalAttempt= async (req: Request, res: Response, nex
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "successfully schedule a proposal seminar" : `failed to schedule a proposal seminar: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "successfully schedule a proposal seminar"
+      : `failed to schedule a proposal seminar: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -329,7 +384,9 @@ export const logScheduleProposalAttempt= async (req: Request, res: Response, nex
       },
     });
 
-    logger.info(`Schedule seminar proposal log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Schedule seminar proposal log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log schedule seminar proposal attempt:", error);
   }
@@ -337,8 +394,11 @@ export const logScheduleProposalAttempt= async (req: Request, res: Response, nex
   next();
 };
 
-
-export const logScheduleResultAttempt= async (req: Request, res: Response, next: NextFunction) => {
+export const logScheduleResultAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -350,7 +410,9 @@ export const logScheduleResultAttempt= async (req: Request, res: Response, next:
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Schedule seminar hasil successful" : `Schedule seminar hasil failed: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Schedule seminar hasil successful"
+      : `Schedule seminar hasil failed: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -362,7 +424,9 @@ export const logScheduleResultAttempt= async (req: Request, res: Response, next:
       },
     });
 
-    logger.info(`Schedule seminar hasil log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Schedule seminar hasil log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log schedule seminar hasil attempt:", error);
   }
@@ -370,9 +434,11 @@ export const logScheduleResultAttempt= async (req: Request, res: Response, next:
   next();
 };
 
-
-
-export const logAssessProposalAttemp = async (req: Request, res: Response, next: NextFunction) => {
+export const logAssessProposalAttemp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -384,7 +450,9 @@ export const logAssessProposalAttemp = async (req: Request, res: Response, next:
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "successfully assessed the proposal seminar" : `failed to assess the proposal seminar: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "successfully assessed the proposal seminar"
+      : `failed to assess the proposal seminar: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -396,7 +464,9 @@ export const logAssessProposalAttemp = async (req: Request, res: Response, next:
       },
     });
 
-    logger.info(`Assess seminar proposal log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Assess seminar proposal log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log assess seminar proposal attempt:", error);
   }
@@ -404,8 +474,11 @@ export const logAssessProposalAttemp = async (req: Request, res: Response, next:
   next();
 };
 
-
-export const logAssessResultAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logAssessResultAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -417,7 +490,9 @@ export const logAssessResultAttempt = async (req: Request, res: Response, next: 
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Assess seminar hasil successful" : `Assess seminar hasil failed: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Assess seminar hasil successful"
+      : `Assess seminar hasil failed: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -429,7 +504,9 @@ export const logAssessResultAttempt = async (req: Request, res: Response, next: 
       },
     });
 
-    logger.info(`Assess seminar hasil log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Assess seminar hasil log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log assess seminar proposal attempt:", error);
   }
@@ -437,8 +514,11 @@ export const logAssessResultAttempt = async (req: Request, res: Response, next: 
   next();
 };
 
-
-export const logUpdateSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateSemproAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -450,7 +530,9 @@ export const logUpdateSemproAttempt = async (req: Request, res: Response, next: 
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "successfully update proposal seminar" : `failed to update proposal seminar: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "successfully update proposal seminar"
+      : `failed to update proposal seminar: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -462,7 +544,9 @@ export const logUpdateSemproAttempt = async (req: Request, res: Response, next: 
       },
     });
 
-    logger.info(`Seminar proposal update log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal update log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log assess seminar proposal attempt:", error);
   }
@@ -470,7 +554,11 @@ export const logUpdateSemproAttempt = async (req: Request, res: Response, next: 
   next();
 };
 
-export const logUpdateSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateSemhasAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -482,7 +570,9 @@ export const logUpdateSemhasAttempt = async (req: Request, res: Response, next: 
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Successfully update result seminar" : `Failed update result seminar: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Successfully update result seminar"
+      : `Failed update result seminar: ${reason || "Unknown reason"}`;
 
     await prisma.securityLog.create({
       data: {
@@ -494,7 +584,9 @@ export const logUpdateSemhasAttempt = async (req: Request, res: Response, next: 
       },
     });
 
-    logger.info(`Assess seminar hasil log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Assess seminar hasil log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log assess seminar hasil attempt:", error);
   }
@@ -502,8 +594,11 @@ export const logUpdateSemhasAttempt = async (req: Request, res: Response, next: 
   next();
 };
 
-
-export const logUploadDocSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUploadDocSemhasAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -515,7 +610,11 @@ export const logUploadDocSemhasAttempt = async (req: Request, res: Response, nex
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Successfully upload the result seminar document" : `failed to upload result seminar document: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Successfully upload the result seminar document"
+      : `failed to upload result seminar document: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -527,7 +626,9 @@ export const logUploadDocSemhasAttempt = async (req: Request, res: Response, nex
       },
     });
 
-    logger.info(`Seminar result document upload log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar result document upload log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
     logger.error("Failed to log Seminar result document uploadattempt:", error);
   }
@@ -535,7 +636,11 @@ export const logUploadDocSemhasAttempt = async (req: Request, res: Response, nex
   next();
 };
 
-export const logUploadDocSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUploadDocSemproAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -547,7 +652,11 @@ export const logUploadDocSemproAttempt = async (req: Request, res: Response, nex
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Successfully upload the proposal seminar document" : `failed to upload proposal seminar document: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Successfully upload the proposal seminar document"
+      : `failed to upload proposal seminar document: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -559,16 +668,24 @@ export const logUploadDocSemproAttempt = async (req: Request, res: Response, nex
       },
     });
 
-    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal document upload log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
-    logger.error("Failed to log Seminar proposal document uploadattempt:", error);
+    logger.error(
+      "Failed to log Seminar proposal document uploadattempt:",
+      error
+    );
   }
 
   next();
 };
 
-
-export const logUpdateDocSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateDocSemproAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -580,7 +697,11 @@ export const logUpdateDocSemproAttempt = async (req: Request, res: Response, nex
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "successfully update the proposal seminar document" : `failed to update proposal seminar document: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "successfully update the proposal seminar document"
+      : `failed to update proposal seminar document: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -592,16 +713,24 @@ export const logUpdateDocSemproAttempt = async (req: Request, res: Response, nex
       },
     });
 
-    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal document upload log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
-    logger.error("Failed to log Seminar proposal document uploadattempt:", error);
+    logger.error(
+      "Failed to log Seminar proposal document uploadattempt:",
+      error
+    );
   }
 
   next();
 };
 
-
-export const logUpdateDocSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateDocSemhasAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -613,7 +742,11 @@ export const logUpdateDocSemhasAttempt = async (req: Request, res: Response, nex
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "successfully update the proposal seminar document" : `failed to update proposal seminar document: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "successfully update the proposal seminar document"
+      : `failed to update proposal seminar document: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -625,16 +758,24 @@ export const logUpdateDocSemhasAttempt = async (req: Request, res: Response, nex
       },
     });
 
-    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal document upload log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
-    logger.error("Failed to log Seminar proposal document uploadattempt:", error);
+    logger.error(
+      "Failed to log Seminar proposal document uploadattempt:",
+      error
+    );
   }
 
   next();
 };
 
-
-export const logUpdateAssessSemproAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateAssessSemproAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -646,7 +787,11 @@ export const logUpdateAssessSemproAttempt = async (req: Request, res: Response, 
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Successfully update proposal seminar assessment" : `Failed to update proposal seminar assessment: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Successfully update proposal seminar assessment"
+      : `Failed to update proposal seminar assessment: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -658,16 +803,24 @@ export const logUpdateAssessSemproAttempt = async (req: Request, res: Response, 
       },
     });
 
-    logger.info(`Seminar proposal update assessment log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal update assessment log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
-    logger.error("Failed to log Seminar proposal update assesment attempt:", error);
+    logger.error(
+      "Failed to log Seminar proposal update assesment attempt:",
+      error
+    );
   }
 
   next();
 };
 
-
-export const logUpdateAssessSemhasAttempt = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateAssessSemhasAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -679,7 +832,11 @@ export const logUpdateAssessSemhasAttempt = async (req: Request, res: Response, 
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Successfully update result seminar assessment" : `Failed to update result seminar assessment: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Successfully update result seminar assessment"
+      : `Failed to update result seminar assessment: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -691,17 +848,24 @@ export const logUpdateAssessSemhasAttempt = async (req: Request, res: Response, 
       },
     });
 
-    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal document upload log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
-    logger.error("Failed to log Seminar proposal update assesment attempt:", error);
+    logger.error(
+      "Failed to log Seminar proposal update assesment attempt:",
+      error
+    );
   }
 
   next();
 };
 
-
-
-export const logUpdateschedulesempro = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateschedulesempro = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -713,7 +877,11 @@ export const logUpdateschedulesempro = async (req: Request, res: Response, next:
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Successfully update sempro seminar schedule" : `Failed to update proposal seminar schedule: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Successfully update sempro seminar schedule"
+      : `Failed to update proposal seminar schedule: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -725,17 +893,24 @@ export const logUpdateschedulesempro = async (req: Request, res: Response, next:
       },
     });
 
-    logger.info(`Seminar proposal update schedule upload log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal update schedule upload log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
-    logger.error("Failed to log Seminar proposal update schedule attempt:", error);
+    logger.error(
+      "Failed to log Seminar proposal update schedule attempt:",
+      error
+    );
   }
 
   next();
 };
 
-
-
-export const logUpdateschedulesemhas = async (req: Request, res: Response, next: NextFunction) => {
+export const logUpdateschedulesemhas = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const ip = getClientIp(req);
   const device = getClientDevice(req);
   const { email, success, reason } = req.body;
@@ -747,7 +922,11 @@ export const logUpdateschedulesemhas = async (req: Request, res: Response, next:
     });
 
     const userId = user ? user.id : null;
-    const action = success ? "Successfully update result seminar assessment" : `Failed to update result seminar assessment: ${reason || "Unknown reason"}`;
+    const action = success
+      ? "Successfully update result seminar assessment"
+      : `Failed to update result seminar assessment: ${
+          reason || "Unknown reason"
+        }`;
 
     await prisma.securityLog.create({
       data: {
@@ -759,14 +938,135 @@ export const logUpdateschedulesemhas = async (req: Request, res: Response, next:
       },
     });
 
-    logger.info(`Seminar proposal document upload log saved: ${action} - User ID: ${userId}`);
+    logger.info(
+      `Seminar proposal document upload log saved: ${action} - User ID: ${userId}`
+    );
   } catch (error) {
-    logger.error("Failed to log Seminar proposal update assesment attempt:", error);
+    logger.error(
+      "Failed to log Seminar proposal update assesment attempt:",
+      error
+    );
   }
 
   next();
 };
 
+export const logCreateAnnouncementAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
 
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
 
+    const userId = user ? user.id : null;
+    const action = success
+      ? "Membuat pengumuman berhasil"
+      : `Gagal membuat pengumuman: ${reason || "Unknown reason"}`;
 
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(
+      `Create announcement log saved: ${action} - User ID: ${userId}`
+    );
+  } catch (error) {
+    logger.error("Failed to log create announcement attempt:", error);
+  }
+
+  next();
+};
+
+export const logUpdateAnnouncementAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success
+      ? "Memperbarui pengumuman berhasil"
+      : `Gagal memperbarui pengumuman: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(
+      `Update announcement log saved: ${action} - User ID: ${userId}`
+    );
+  } catch (error) {
+    logger.error("Failed to log update announcement attempt:", error);
+  }
+
+  next();
+};
+
+export const logDeleteAnnouncementAttempt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const ip = getClientIp(req);
+  const device = getClientDevice(req);
+  const { email, success, reason } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    const userId = user ? user.id : null;
+    const action = success
+      ? "Menghapus pengumuman berhasil"
+      : `Gagal menghapus pengumuman: ${reason || "Unknown reason"}`;
+
+    await prisma.securityLog.create({
+      data: {
+        userId,
+        action,
+        ipAddress: ip,
+        device,
+        createdAt: new Date(),
+      },
+    });
+
+    logger.info(
+      `Delete announcement log saved: ${action} - User ID: ${userId}`
+    );
+  } catch (error) {
+    logger.error("Failed to log delete announcement attempt:", error);
+  }
+
+  next();
+};
