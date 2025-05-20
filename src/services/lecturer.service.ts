@@ -1,4 +1,4 @@
-import { Lecturer } from "@prisma/client";
+import { Lecturer } from "../../prisma/app/generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import {
   uploadToCloudinary,
