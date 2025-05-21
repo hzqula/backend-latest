@@ -66,7 +66,7 @@ model Coordinator {
   name           String
   profilePicture String?        @map("profile_picture")
   user           User?
-  announcements  Announcement[] @relation("CoordinatorAnnouncements") // Tambahkan relasi balik
+  announcements  Announcement[] // Relasi one-to-many otomatis
 }
 
 model Seminar {
@@ -138,16 +138,14 @@ model Assessment {
 model Announcement {
   id            Int         @id @default(autoincrement())
   title         String
-  content       String // Caption dari pengumuman
-  image         String? // URL gambar dari Cloudinary
-  visibility    Visibility // Enum untuk visibilitas
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @default(now())
-  coordinator   Coordinator @relation("CoordinatorAnnouncements", fields: [coordinatorId], references: [id], onDelete: Cascade)
+  content       String
+  visibility    String[]
   coordinatorId Int
+  coordinator   Coordinator @relation(fields: [coordinatorId], references: [id], onDelete: Cascade)
+  image         String?
+  createdAt     DateTime    @default(now())
 }
 
-// Tambahkan enum untuk visibilitas
 enum Visibility {
   LECTURER
   STUDENT
