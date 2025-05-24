@@ -61,11 +61,11 @@ export class SeminarService {
         throw new Error("Guidance score harus antara 0 sampai 100");
       }
       finalScore =
-        (writingScore +
+        (
           presentationScore +
           masteryScore +
           characteristicScore) /
-        4;
+        3;
     } else {
       finalScore = (writingScore + presentationScore + masteryScore) / 3;
     }
