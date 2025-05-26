@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import multer from "multer";
 import { AuthService } from "../services/auth.service";
 import {
   logLoginAttempt,
@@ -20,22 +19,6 @@ interface DecodedToken {
 
 const secretKey = JWT_SECRET || "bismillah-selesai";
 const authService = new AuthService();
-
-export const upload = multer({
-  storage: multer.memoryStorage(),
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
-    const maxSize = 2 * 1024 * 1024;
-    if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new Error("Hanya file gambar (JPEG, PNG) yang diperbolehkan"));
-    }
-    if (file.size > maxSize) {
-      return cb(new Error("Ukuran file maksimum adalah 2MB"));
-    }
-    cb(null, true);
-  },
-  limits: { fileSize: 2 * 1024 * 1024 },
-});
 
 export const sendOTP = async (req: Request, res: Response): Promise<void> => {
   const { email } = req.body;
