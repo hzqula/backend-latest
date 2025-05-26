@@ -6,10 +6,9 @@ import {
   verifyOTP,
   completeRegister,
   login,
-  upload,
   verifyRole,
 } from "../controllers/auth.controller";
-import { updateProfilePicture } from "../controllers/profile.controller";
+import { upload } from "../utils/multer";
 
 const authRouter = express.Router();
 
@@ -21,12 +20,6 @@ authRouter.post(
   completeRegister
 );
 authRouter.post("/login", login);
-authRouter.post(
-  "/update-profile-picture",
-  authenticateJWT,
-  upload.single("profilePicture"),
-  asyncHandler(updateProfilePicture)
-);
 authRouter.get("/verify-role", asyncHandler(verifyRole as any));
 
 export default authRouter;
