@@ -4,3 +4,7 @@ node_modules
 .env*.local
 
 src/configs/*.json
+
+logs/app.log
+
+prisma/app/generated/prisma
