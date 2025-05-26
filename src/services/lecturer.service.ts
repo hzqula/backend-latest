@@ -113,4 +113,28 @@ export class LecturerService {
 
     return lecturer;
   }
+
+  async updateProfileData(
+    nip: string,
+    data: { name?: string; phoneNumber?: string; nip?: string }
+  ): Promise<Lecturer> {
+    const lecturer = await prisma.lecturer.findUnique({ where: { nip } });
+    if (!lecturer) throw new Error("Dosen tidak ditemukan");
+
+    if (data.nip && data.nip !== nip) {
+      const existingLecturer = await prisma.lecturer.findUnique({
+        where: { nip: data.nip },
+      });
+      if (existingLecturer) throw new Error("NIP sudah digunakan");
+    }
+
+    return prisma.lecturer.update({
+      where: { nip },
+      data: {
+        name: data.name || lecturer.name,
+        phoneNumber: data.phoneNumber || lecturer.phoneNumber,
+        nip: data.nip || lecturer.nip,
+      },
+    });
+  }
 }

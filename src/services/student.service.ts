@@ -125,4 +125,28 @@ export class StudentService {
     const semester = this.calculateSemester(nim);
     return { ...student, semester };
   }
+
+  async updateProfileData(
+    nim: string,
+    data: { name?: string; phoneNumber?: string; nim?: string }
+  ): Promise<Student> {
+    const student = await prisma.student.findUnique({ where: { nim } });
+    if (!student) throw new Error("Mahasiswa tidak ditemukan");
+
+    if (data.nim && data.nim !== nim) {
+      const existingStudent = await prisma.student.findUnique({
+        where: { nim: data.nim },
+      });
+      if (existingStudent) throw new Error("NIM sudah digunakan");
+    }
+
+    return prisma.student.update({
+      where: { nim },
+      data: {
+        name: data.name || student.name,
+        phoneNumber: data.phoneNumber || student.phoneNumber,
+        nim: data.nim || student.nim,
+      },
+    });
+  }
 }
