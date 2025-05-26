@@ -60,7 +60,7 @@ export class SeminarService {
       if (characteristicScore < 0 || characteristicScore > 100) {
         throw new Error("Guidance score harus antara 0 sampai 100");
       }
-      finalScore = (presentationScore + masteryScore + characteristicScore) / 4;
+      finalScore = (presentationScore + masteryScore + characteristicScore) / 3;
     } else {
       finalScore = (writingScore + presentationScore + masteryScore) / 3;
     }
