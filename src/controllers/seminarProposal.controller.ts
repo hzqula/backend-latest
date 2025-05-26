@@ -10,9 +10,8 @@ import {
   logUploadDocSemproAttempt,
   logUpdateDocSemproAttempt,
   logUpdateAssessSemproAttempt,
-  logUpdateschedulesempro
+  logUpdateschedulesempro,
 } from "../middlewares/securityLogMiddleware";
-import { EMAIL_PASSWORD } from "../configs/env";
 import { SeminarService } from "../services/seminar.service";
 
 interface AuthenticatedRequest extends Request {
@@ -303,7 +302,7 @@ export const updateProposalSeminarSchedule: RequestHandler = async (
     req.body.email = email;
     req.body.success = true;
     req.body.reason = "Berhasil memperbarui jadwal seminar proposal";
-    logUpdateschedulesempro(req, res, () => {})
+    logUpdateschedulesempro(req, res, () => {});
     res.status(200).json({
       success: true,
       seminar,
@@ -314,7 +313,7 @@ export const updateProposalSeminarSchedule: RequestHandler = async (
     req.body.email = req.body?.email;
     req.body.succes = false;
     req.body.reason = error instanceof Error ? error.message : "Uknown error";
-    logUpdateschedulesempro (req, res, () => {});
+    logUpdateschedulesempro(req, res, () => {});
     res
       .status(
         error instanceof Error && error.message === "Seminar tidak ditemukan"
