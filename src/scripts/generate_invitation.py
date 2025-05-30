@@ -30,7 +30,7 @@ def generate_seminar_invitation(seminar_data, template_path, output_path):
 
     # Daftar penggantian
     replacements = [
-        ("<<SEMINAR>>", "SEMINAR PROPOSAL"),
+        ("<<SEMINAR>>", "Seminar Proposal"),
         ("<<KETUA SEMINAR>>", seminar_data.get("ketua_seminar", "Tidak ditentukan")),
         ("<<NAMA PEMBIMBING 1>>", seminar_data.get("pembimbing_1", "Tidak ditentukan")),
         ("<<NAMA PEMBIMBING 2>>", seminar_data.get("pembimbing_2", "Tidak ditentukan")),
