@@ -7,7 +7,7 @@ import {
   deleteFileFromDrive,
   uploadFileToDrive,
 } from "./googleDrive.service";
-import { BASE_FOLDER_ID } from "../configs/env";
+import { BASE_FOLDER_ID_SEMINAR_PROPOSAL } from "../configs/env";
 import { prisma } from "../lib/prisma";
 import { SeminarService } from "./seminar.service";
 
@@ -30,8 +30,8 @@ export class SeminarProposalService {
 
     if (!student) throw new Error("Mahasiswa tidak ditemukan");
 
-    const folderName = `[SEMINAR PROPOSAL] ${student.name} - ${studentNIM}`;
-    const baseFolderId = BASE_FOLDER_ID;
+    const folderName = `[${studentNIM}] ${student.name}`;
+    const baseFolderId = BASE_FOLDER_ID_SEMINAR_PROPOSAL;
     const folderId = await createFolder(folderName, baseFolderId);
 
     return prisma.seminar.create({
