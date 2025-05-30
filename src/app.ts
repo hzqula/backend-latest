@@ -16,9 +16,9 @@ import { logAllRequests } from "./middlewares/securityLogMiddleware";
 import { cleanupOldLogs } from "./services/security-log.service";
 import SecurityLogRoute from "./routes/security-log.route";
 import { authenticateJWT, restrictTo } from "./middlewares/auth";
-import invitationRouter from "./routes/invitation.route";
 import announcementRouter from "./routes/announcement.route";
 import profileRouter from "./routes/profile.route";
+import documentRouter from "./routes/document.route";
 
 const app = express();
 
@@ -96,7 +96,7 @@ app.use(
   restrictTo("COORDINATOR"),
   SecurityLogRoute
 );
-app.use("/api", invitationRouter);
+app.use("/api/documents", documentRouter);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error("Unhandled error:", err.stack);
