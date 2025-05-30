@@ -14,13 +14,15 @@ interface SeminarData {
   judul_penelitian: string;
   date: string;
   time: string;
+  room?: string;
   ketua_seminar?: string;
+  nip_ketua_seminar?: string;
   pembimbing_1?: string;
   pembimbing_2?: string;
   penguji_1?: string;
   penguji_2?: string;
   hari?: string;
-  nip_ketua_seminar?: string;
+  type?: "PROPOSAL" | "HASIL";
 }
 
 export class DocumentService {
@@ -78,7 +80,11 @@ export class DocumentService {
     try {
       // Langkah 2: Ganti placeholder dalam dokumen sementara
       const replacements = [
-        { placeholder: "<<SEMINAR>>", replacement: "Seminar Proposal" },
+        {
+          placeholder: "<<SEMINAR>>",
+          replacement:
+            seminarData.type === "HASIL" ? "Seminar Hasil" : "Seminar Proposal",
+        },
         {
           placeholder: "<<KETUA SEMINAR>>",
           replacement: seminarData.pembimbing_1 || "Tidak ditentukan",
@@ -125,7 +131,7 @@ export class DocumentService {
         },
         {
           placeholder: "<<RUANG SEMINAR>>",
-          replacement: "Tidak ditentukan", // Placeholder ini ada di undangan, tapi kita biarkan default
+          replacement: seminarData.room || "Tidak diketahui",
         },
       ];
 
@@ -207,7 +213,9 @@ export class DocumentService {
         {
           placeholder: "<<BERITA ACARA>>",
           replacement:
-            "BERITA ACARA SEMINAR USUL PENELITIAN MAHASISWA PROGRAM STUDI TEKNIK LINGKUNGAN",
+            seminarData.type === "PROPOSAL"
+              ? "BERITA ACARA SEMINAR HASIL PENELITIAN MAHASISWA PROGRAM STUDI TEKNIK LINGKUNGAN"
+              : "BERITA ACARA SEMINAR USUL PENELITIAN MAHASISWA PROGRAM STUDI TEKNIK LINGKUNGAN",
         },
         {
           placeholder: "<<NAMA MAHASISWA>>",
