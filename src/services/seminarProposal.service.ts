@@ -161,9 +161,9 @@ export class SeminarProposalService {
       include: { documents: true, student: true },
     });
     if (!seminar) throw new Error("Seminar tidak ditemukan");
-    if (seminar.status !== "SUBMITTED")
+    if (seminar.status !== "DRAFT" && seminar.status !== "SUBMITTED")
       throw new Error(
-        "Dokumen hanya bisa diubah pada seminar dengan status SUBMITTED"
+        "Dokumen hanya bisa diubah pada seminar dengan status DRAFT dan SUBMITTED"
       );
 
     const existingDocs = seminar.documents.find(
