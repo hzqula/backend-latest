@@ -41,9 +41,11 @@ export const authenticateJWT = (
   } catch (error) {
     console.error("JWT verification error:", error); // Debugging
     if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({ error: "Token sudah kedaluwarsa" });
+      res
+        .status(401)
+        .json({ error: "Token sudah kedaluwarsa silakan login ulang" });
     } else if (error instanceof jwt.JsonWebTokenError) {
-      res.status(403).json({ error: "Token ga valid" });
+      res.status(403).json({ error: "Token tidak valid" });
     } else {
       res.status(500).json({ error: "Error server internal" });
     }
@@ -72,11 +74,15 @@ export const restrictTo = (...roles: string[]) => {
 
     if (!normalizedRoles.includes(normalizedUserRole)) {
       const endpoint = req.path; // Mendapatkan endpoint yang diminta
-      console.log(`Access denied to endpoint: ${endpoint} with role: ${userRole}. Allowed roles: ${roles.join(', ')}`); // Log endpoint dan role
+      console.log(
+        `Access denied to endpoint: ${endpoint} with role: ${userRole}. Allowed roles: ${roles.join(
+          ", "
+        )}`
+      ); // Log endpoint dan role
       res.status(403).json({ error: "Ga bener nih role-nya" });
       return;
     }
 
     next();
   };
-}
+};
