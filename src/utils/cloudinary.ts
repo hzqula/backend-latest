@@ -122,10 +122,10 @@ export const deleteFolderFromCloudinary = async (
 // Fungsi untuk mendapatkan public_id dari URL Cloudinary
 export const getPublicIdFromUrl = (url: string): string => {
   const parts = url.split("/");
-  const fileName = parts[parts.length - 1]; // Misalnya: "1747652184861-gambar.png"
-  const folderPath = parts.slice(parts.indexOf("pengumuman"), -1).join("/"); // Misalnya: "pengumuman/1"
-  const publicId = fileName.split(".")[0]; // Misalnya: "1747652184861-gambar"
-  const fullPublicId = `${folderPath}/${publicId}`; // Contoh: "pengumuman/1/1747652184861-gambar"
-  console.log("Extracted fullPublicId:", fullPublicId); // Debug
+  const fileName = parts[parts.length - 1];
+  const folderPath = parts.slice(parts.indexOf("pengumuman"), -1).join("/");
+  const publicId = fileName.split(".")[0];
+  const fullPublicId = `${folderPath}/${publicId}`;
+  console.log("Extracted fullPublicId:", fullPublicId);
   return fullPublicId;
 };
