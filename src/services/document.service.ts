@@ -83,7 +83,9 @@ export class DocumentService {
         {
           placeholder: "<<SEMINAR>>",
           replacement:
-            seminarData.type === "HASIL" ? "Seminar Hasil" : "Seminar Proposal",
+            seminarData.type === "PROPOSAL"
+              ? "Seminar Proposal"
+              : "Seminar Hasil",
         },
         {
           placeholder: "<<KETUA SEMINAR>>",
@@ -243,7 +245,10 @@ export class DocumentService {
         },
         {
           placeholder: "<<SEMINAR>>",
-          replacement: "Seminar Proposal",
+          replacement:
+            seminarData.type === "PROPOSAL"
+              ? "Seminar Usul Penelitian"
+              : "Seminar Hasil Penelitian",
         },
         {
           placeholder: "<<KETUA SEMINAR>>",
